@@ -6,29 +6,15 @@ find_package(catkin REQUIRED COMPONENTS
 roscpp 
 std_msgs 
 tf
+custom_messages
 message_generation
+sensor_msgs
 )
-
-
-
-add_message_files(DIRECTORY msg
-                  FILES
-		 floatStamped.msg
-)
-
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-)
-
 
 ## Declare a catkin package
 catkin_package(
 CATKIN_DEPENDS message_runtime
 )
-
-
-
 
 
 ## Build talker and listener
@@ -38,3 +24,4 @@ add_executable(my_pub src/pub.cpp)
 target_link_libraries(my_pub ${catkin_LIBRARIES})
 
 add_dependencies(my_pub ${catkin_EXPORTED_TARGETS})
+
