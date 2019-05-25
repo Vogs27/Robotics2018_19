@@ -1,11 +1,10 @@
 #include "ros/ros.h"
-#include <cmath> 
+#include <cmath>
 #include <tf/transform_broadcaster.h>
 #include <nav_msgs/Odometry.h>
 #include <custom_messages/floatStamped.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
-#include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
 #define _USE_MATH_DEFINES
@@ -23,95 +22,91 @@ class pub_tf_odom{
 
 			  message_filters::Subscriber<custom_messages::floatStamped> speedL(n, "speedL_stamped", 1);
 			  message_filters::Subscriber<custom_messages::floatStamped> speedR(n, "speedR_stamped", 1);
-			  
-			  //typedef message_filters::sync_policies::ExactTime<geometry_msgs::Vector3Stamped, geometry_msgs::Vector3Stamped> MySyncPolicy;
+
 			  typedef message_filters::sync_policies::ApproximateTime<custom_messages::floatStamped, custom_messages::floatStamped> MySyncPolicy;
 			  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), speedL, speedR);
-			  
+
 			  current_time = ros::Time::now();
 			  last_time = current_time;
+			  odom_pub = n.advertise<nav_msgs::Odometry>("world", 50);
 
 			  sync.registerCallback(boost::bind(&pub_tf_odom::callback, this, _1, _2));
-			ros::spin();
-
+		//	ros::spin();
 		}
 
-private:
-ros::NodeHandle n;
-tf::TransformBroadcaster odom_broadcaster;
-geometry_msgs::TransformStamped odom_trans;
+	private:
+		ros::NodeHandle n;
+		tf::TransformBroadcaster odom_broadcaster; //transformation broadcaster
+		geometry_msgs::TransformStamped odom_trans;
+		ros::Publisher odom_pub; //odometry topic publisher
 
-void callback(const custom_messages::floatStampedConstPtr& speedL, const custom_messages::floatStampedConstPtr& speedR)
-	{
-	    //compute dt   
-	    current_time = ros::Time::now();
-	    double dt = (current_time - last_time).toSec();
+	void callback(const custom_messages::floatStampedConstPtr& speedL, const custom_messages::floatStampedConstPtr& speedR)
+		{
+		    //compute dt (delta t)
+		    current_time = ros::Time::now();
+		    double dt = (current_time - last_time).toSec();
 
-	    //get velocities from bag's topics
-	    float vL = speedL -> data;
-	    float vR = speedR -> data;
-	    
-	    //compute odometry
-	    double w = (vR - vL)/(double)0.13;
-	    double delta_th = w * dt;
-	    th += delta_th;
+		    //get velocities from bag's topics
+		    float vL = speedL -> data;
+		    float vR = speedR -> data;
 
-	    if(th > 2 * M_PI) th -= 2 * M_PI;
-	    if(th < 0) th += 2 * M_PI;
-	    
-	    double v = (vR + vL)/(double)2;
-	    double delta_x = v * cos(th) * dt;
-	    double delta_y = v * sin(th) * dt;
-	    x += delta_x;
-	    y += delta_y;
-	    
+		    //compute odometry
+		    double w = (vR - vL)/(double)1.3;
+		    double delta_th = w * dt;
+		    th += delta_th;
 
-	  ROS_INFO ("TIMEBAG: [%i,%i], dt: [%f], L: (%f), R: (%f) | X,Y,TH (%f, %f, %f)\n", speedL->header.stamp.sec, speedL->header.stamp.nsec, dt, vL, vR, x, y, th);
+		    if(th > 2 * M_PI) th -= 2 * M_PI;
+		    if(th < 0) th += 2 * M_PI;
 
-	   //create odom publisher
-	    ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("world", 50);
-	    
+		    double v = (vR + vL)/(double)2;
+		    double delta_x = v * cos(th) * dt;
+		    double delta_y = v * sin(th) * dt;
+		    x += delta_x;
+		    y += delta_y;
 
-	    //since all odometry is 6DOF we'll need a quaternion created from yaw
-	    geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
 
-	    //first, we'll publish the transform over tf
-	   
-	    odom_trans.header.stamp = current_time;
-	    odom_trans.header.frame_id = "world";
-	    odom_trans.child_frame_id = "base_link";
+		 // ROS_INFO ("TIMEBAG: [%i,%i], dt: [%f], L: (%f), R: (%f) | X,Y,TH (%f, %f, %f)\n", speedL->header.stamp.sec, speedL->header.stamp.nsec, dt, vL, vR, x, y, th);
 
-	    odom_trans.transform.translation.x = x;
-	    odom_trans.transform.translation.y = y;
-	    odom_trans.transform.translation.z = 0.0;
-	    odom_trans.transform.rotation = odom_quat;
+		    //quaternion created from yaw
+		    geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
 
-	    //send the transform
-	    odom_broadcaster.sendTransform(odom_trans);
+		    //transformation published by tf
 
-	 //next, we'll publish the odometry message over ROS
-	    nav_msgs::Odometry odom;
-	    odom.header.stamp = current_time;
-	    odom.header.frame_id = "world";
+		    odom_trans.header.stamp = current_time;
+		    odom_trans.header.frame_id = "world";
+		    odom_trans.child_frame_id = "base_link";
 
-	    //set the position
-	    odom.pose.pose.position.x = x;
-	    odom.pose.pose.position.y = y;
-	    odom.pose.pose.position.z = 0.0;
-	    odom.pose.pose.orientation = odom_quat;
+		    odom_trans.transform.translation.x = x;
+		    odom_trans.transform.translation.y = y;
+		    odom_trans.transform.translation.z = 0.0;
+		    odom_trans.transform.rotation = odom_quat;
 
-	    //set the velocity
-	    odom.child_frame_id = "base_link";
-	    odom.twist.twist.linear.x = v * cos(th);
-	    odom.twist.twist.linear.y = v * sin(th);
-	    odom.twist.twist.angular.z = w;
+		    //send the transform with tf
+		    odom_broadcaster.sendTransform(odom_trans);
 
-	    //publish the message
-	    odom_pub.publish(odom);
+		 	//publish odometry topic
+		    nav_msgs::Odometry odom;
+		    odom.header.stamp = current_time;
+		    odom.header.frame_id = "world";
 
-	    last_time = current_time;
+		    //set the position
+		    odom.pose.pose.position.x = x;
+		    odom.pose.pose.position.y = y;
+		    odom.pose.pose.position.z = 0.0;
+		    odom.pose.pose.orientation = odom_quat;
 
-	}
+		    //set the velocity
+		    odom.child_frame_id = "base_link";
+		    odom.twist.twist.linear.x = v * cos(th);
+		    odom.twist.twist.linear.y = v * sin(th);
+		    odom.twist.twist.angular.z = w;
+
+		    //publish the message
+		    odom_pub.publish(odom);
+
+		    last_time = current_time;
+
+		}
 
 };
 
@@ -123,5 +118,3 @@ int main(int argc, char** argv)
 
   return 0;
 }
-
-
