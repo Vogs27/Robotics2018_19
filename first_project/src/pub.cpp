@@ -20,28 +20,30 @@ double prevTime = 0;
 
 void callback(const custom_messages::floatStampedConstPtr& speedL, const custom_messages::floatStampedConstPtr& speedR)
 {
-
+    //compute dt   
     current_time = ros::Time::now();
+    double dt = current_time.toSec() - last_time.toSec();
+    last_time = current_time;
+
+    //get velocities from bag's topics
     float vL = speedL -> data;
     float vR = speedR -> data;
-    //compute odometry in a typical way given the velocities of the robot
-  
-    double v = (vL + vR)/2;
-    double dt = (double) 1/10 ;
-
+    
+    //compute odometry
     double delta_th = ((vR - vL)/(double)0.13 * dt);
     th += delta_th;
 
     if(th > 2 * M_PI) th -= 2 * M_PI;
     if(th < 0) th += 2 * M_PI;
     
+    double v = (vL + vR)/2;
     double delta_x = v * cos(th) * dt;
     double delta_y = v * sin(th) * dt;
     x += delta_x;
     y += delta_y;
     
 
-  ROS_INFO ("TIMEBAG: [%i,%i], CURRENT: [%i,%i], L: (%f), R: (%f) | X,Y,TH (%f, %f, %f)\n", speedL->header.stamp.sec, speedL->header.stamp.nsec, current_time.sec, current_time.nsec , vL, vR, x, y, th);
+  ROS_INFO ("TIMEBAG: [%i,%i], dt: [%f], L: (%f), R: (%f) | X,Y,TH (%f, %f, %f)\n", speedL->header.stamp.sec, speedL->header.stamp.nsec, dt, vL, vR, x, y, th);
 }
 
 
@@ -61,6 +63,8 @@ int main(int argc, char** argv)
   message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), speedL, speedR);
   sync.registerCallback(boost::bind(&callback, _1, _2));
 
+  current_time = ros::Time::now();
+  last_time = current_time;
   ros::spin();
 
   //create odom publisher
