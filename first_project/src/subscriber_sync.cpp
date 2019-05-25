@@ -31,7 +31,7 @@ class pub_tf_odom{
 			  odom_pub = n.advertise<nav_msgs::Odometry>("world", 50);
 
 			  sync.registerCallback(boost::bind(&pub_tf_odom::callback, this, _1, _2));
-		//	ros::spin();
+			ros::spin();
 		}
 
 	private:
