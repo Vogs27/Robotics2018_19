@@ -3,11 +3,8 @@
   <name>first_project</name>
   <version>0.0.0</version>
   <description>First Project Robotics 2019</description>
-
-  <!-- One maintainer tag required, multiple allowed, one person per tag -->
-  <!-- Example:  -->
-  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="elenarosalba.schinelli@mail.polimi.it">elena</maintainer>
+  <maintainer email="alessandroaandrea.vogrig@mail.polimi.it">alessandro</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -51,19 +48,18 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_depend>message_generation</build_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-
-  <build_depend>message_generation</build_depend>
   <build_export_depend>message_runtime</build_export_depend>
   <exec_depend>message_runtime</exec_depend>
 
-<build_depend>custom_messages</build_depend>
-<exec_depend>custom_messages</exec_depend>
 
-<depend>sensor_msgs</depend>
+
+<!--
+<depend>sensor_msgs</depend> -->
 
 
   <!-- The export tag contains other, unspecified, tags -->

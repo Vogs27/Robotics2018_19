@@ -2,7 +2,7 @@
 #include <cmath>
 #include <tf/transform_broadcaster.h>
 #include <nav_msgs/Odometry.h>
-#include <custom_messages/floatStamped.h>
+#include <first_project/floatStamped.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -20,10 +20,10 @@ class pub_tf_odom{
 	public:
 		pub_tf_odom(){
 
-			  message_filters::Subscriber<custom_messages::floatStamped> speedL(n, "speedL_stamped", 1);
-			  message_filters::Subscriber<custom_messages::floatStamped> speedR(n, "speedR_stamped", 1);
+			  message_filters::Subscriber<first_project::floatStamped> speedL(n, "speedL_stamped", 1);
+			  message_filters::Subscriber<first_project::floatStamped> speedR(n, "speedR_stamped", 1);
 
-			  typedef message_filters::sync_policies::ApproximateTime<custom_messages::floatStamped, custom_messages::floatStamped> MySyncPolicy;
+			  typedef message_filters::sync_policies::ApproximateTime<first_project::floatStamped, first_project::floatStamped> MySyncPolicy;
 			  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), speedL, speedR);
 
 			  current_time = ros::Time::now();
@@ -40,7 +40,7 @@ class pub_tf_odom{
 		geometry_msgs::TransformStamped odom_trans;
 		ros::Publisher odom_pub; //odometry topic publisher
 
-	void callback(const custom_messages::floatStampedConstPtr& speedL, const custom_messages::floatStampedConstPtr& speedR)
+	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR)
 		{
 		    //compute dt (delta t)
 		    current_time = ros::Time::now();
