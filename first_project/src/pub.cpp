@@ -1,5 +1,5 @@
-
 #include "ros/ros.h"
+#include <cmath> 
 #include <tf/transform_broadcaster.h>
 #include <nav_msgs/Odometry.h>
 #include <custom_messages/floatStamped.h>
@@ -8,11 +8,15 @@
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
+#define _USE_MATH_DEFINES
+
 double x = 0.0;
 double y = 0.0;
 double th = 0.0;
 
 ros::Time current_time, last_time;
+
+double prevTime = 0;
 
 void callback(const custom_messages::floatStampedConstPtr& speedL, const custom_messages::floatStampedConstPtr& speedR)
 {
@@ -23,10 +27,13 @@ void callback(const custom_messages::floatStampedConstPtr& speedL, const custom_
     //compute odometry in a typical way given the velocities of the robot
   
     double v = (vL + vR)/2;
-    double dt = (double) 1/10;
+    double dt = (double) 1/10 ;
 
-    double delta_th = (vR - vL)/(double)0.13 * dt;
+    double delta_th = ((vR - vL)/(double)0.13 * dt);
     th += delta_th;
+
+    if(th > 2 * M_PI) th -= 2 * M_PI;
+    if(th < 0) th += 2 * M_PI;
     
     double delta_x = v * cos(th) * dt;
     double delta_y = v * sin(th) * dt;
@@ -34,12 +41,9 @@ void callback(const custom_messages::floatStampedConstPtr& speedL, const custom_
     y += delta_y;
     
 
-  ROS_INFO ("L: (%f), R: (%f) | X,Y,TH (%f, %f, %f)\n", vL, vR, x, y, th);
+  ROS_INFO ("TIMEBAG: [%i,%i], CURRENT: [%i,%i], L: (%f), R: (%f) | X,Y,TH (%f, %f, %f)\n", speedL->header.stamp.sec, speedL->header.stamp.nsec, current_time.sec, current_time.nsec , vL, vR, x, y, th);
 }
 
-float toFloat(const custom_messages::floatStampedConstPtr& stamped){
-	return stamped->data;
-}
 
 int main(int argc, char** argv)
 {
