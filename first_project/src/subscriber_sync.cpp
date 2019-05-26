@@ -6,6 +6,8 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <dynamic_reconfigure/server.h>
+#include <first_project/parametersConfig.h>
 
 #define _USE_MATH_DEFINES
 
@@ -31,6 +33,7 @@ class pub_tf_odom{
 			  odom_pub = n.advertise<nav_msgs::Odometry>("world", 50);
 
 			  sync.registerCallback(boost::bind(&pub_tf_odom::callback, this, _1, _2));
+			  server.setCallback(f);
 			ros::spin();
 		}
 
@@ -39,7 +42,12 @@ class pub_tf_odom{
 		tf::TransformBroadcaster odom_broadcaster; //transformation broadcaster
 		geometry_msgs::TransformStamped odom_trans;
 		ros::Publisher odom_pub; //odometry topic publisher
-
+		dynamic_reconfigure::Server<first_project::parametersConfig> server;
+		dynamic_reconfigure::Server<first_project::parametersConfig>::CallbackType f;
+		f = boost::bind(&callback, _1, _2);
+	void callback(parameter_test::parametersConfig &config, uint32_t level) {
+		ROS_INFO("Reconfigure request: steering param: %d", config.odom_mode);
+	}
 	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR)
 		{
 		    //compute dt (delta t)
