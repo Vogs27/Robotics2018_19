@@ -1,0 +1,9 @@
+digraph G {
+"world" -> "base_link"[label="Broadcaster: /subscriber_sync\nAverage rate: 100.201 Hz\nMost recent transform: 1558865956.336 ( 0.006 sec old)\nBuffer length: 4.940 sec\n"];
+"base_link" -> "Lwheel"[label="Broadcaster: /left_frame\nAverage rate: 10.197 Hz\nMost recent transform: 1558865956.351 ( -0.009 sec old)\nBuffer length: 4.805 sec\n"];
+"base_link" -> "Rwheel"[label="Broadcaster: /right_frame\nAverage rate: 10.195 Hz\nMost recent transform: 1558865956.359 ( -0.016 sec old)\nBuffer length: 4.806 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1558865956.342"[ shape=plaintext ] ;
+ }->"world";
+}
