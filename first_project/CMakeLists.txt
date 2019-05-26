@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(first_project)
+project (first_project)
 
 find_package(catkin REQUIRED COMPONENTS roscpp std_msgs tf message_generation dynamic_reconfigure)
 add_message_files(FILES floatStamped.msg)

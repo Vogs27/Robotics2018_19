@@ -33,6 +33,8 @@ class pub_tf_odom{
 			  odom_pub = n.advertise<nav_msgs::Odometry>("world", 50);
 
 			  sync.registerCallback(boost::bind(&pub_tf_odom::callback, this, _1, _2));
+
+			  f = boost::bind(&pub_tf_odom::callbackParam, this, _1, _2);
 			  server.setCallback(f);
 			ros::spin();
 		}
@@ -44,8 +46,10 @@ class pub_tf_odom{
 		ros::Publisher odom_pub; //odometry topic publisher
 		dynamic_reconfigure::Server<first_project::parametersConfig> server;
 		dynamic_reconfigure::Server<first_project::parametersConfig>::CallbackType f;
-		f = boost::bind(&callback, _1, _2);
-	void callback(parameter_test::parametersConfig &config, uint32_t level) {
+		int steeringMode;
+
+	void callbackParam(first_project::parametersConfig &config, uint32_t level) {
+		steeringMode = config.odom_mode;
 		ROS_INFO("Reconfigure request: steering param: %d", config.odom_mode);
 	}
 	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR)
@@ -57,21 +61,27 @@ class pub_tf_odom{
 		    //get velocities from bag's topics
 		    float vL = speedL -> data;
 		    float vR = speedR -> data;
+		    double v = 0;
+		    double w = 0;
 
-		    //compute odometry
-		    double w = (vR - vL)/(double)1.3;
-		    double delta_th = w * dt;
-		    th += delta_th;
+		    if(steeringMode == 0){
+			    //compute odometry with DIFFERENTIAL DRIVE model
+			    w = (vR - vL)/(double)1.3;
+			    double delta_th = w * dt;
+			    th += delta_th;
 
-		    if(th > 2 * M_PI) th -= 2 * M_PI;
-		    if(th < 0) th += 2 * M_PI;
+			    if(th > 2 * M_PI) th -= 2 * M_PI;
+			    if(th < 0) th += 2 * M_PI;
 
-		    double v = (vR + vL)/(double)2;
-		    double delta_x = v * cos(th) * dt;
-		    double delta_y = v * sin(th) * dt;
-		    x += delta_x;
-		    y += delta_y;
-
+			    v = (vR + vL)/(double)2;
+			    double delta_x = v * cos(th) * dt;
+			    double delta_y = v * sin(th) * dt;
+			    x += delta_x;
+			    y += delta_y;
+		    }
+		    else{
+			//compute odometry with ACKERMANN model
+		    }
 
 		 // ROS_INFO ("TIMEBAG: [%i,%i], dt: [%f], L: (%f), R: (%f) | X,Y,TH (%f, %f, %f)\n", speedL->header.stamp.sec, speedL->header.stamp.nsec, dt, vL, vR, x, y, th);
 
