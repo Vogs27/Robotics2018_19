@@ -24,15 +24,16 @@ class ackermann{
 
 			  message_filters::Subscriber<first_project::floatStamped> speedL(n, "speedL_stamped", 1);
 			  message_filters::Subscriber<first_project::floatStamped> speedR(n, "speedR_stamped", 1);
+				message_filters::Subscriber<first_project::floatStamped> steer(n, "steer_stamped", 1);
 
-			  typedef message_filters::sync_policies::ApproximateTime<first_project::floatStamped, first_project::floatStamped> MySyncPolicy;
-			  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), speedL, speedR);
+			  typedef message_filters::sync_policies::ApproximateTime<first_project::floatStamped, first_project::floatStamped, first_project::floatStamped> MySyncPolicy;
+			  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), speedL, speedR, steer);
 
 			  current_time = ros::Time::now();
 			  last_time = current_time;
 			  odom_pub = n.advertise<nav_msgs::Odometry>("world_ackermann", 50);
 
-			  sync.registerCallback(boost::bind(&ackermann::callback, this, _1, _2));
+			  sync.registerCallback(boost::bind(&ackermann::callback, this, _1, _2, _3));
 
 			  f = boost::bind(&ackermann::callbackParam, this, _1, _2);
 			  server.setCallback(f);
@@ -44,7 +45,7 @@ class ackermann{
 		tf::TransformBroadcaster odom_broadcaster; //transformation broadcaster
 		geometry_msgs::TransformStamped odom_trans;
 		ros::Publisher odom_pub; //odometry topic publisher
-		dynamic_reconfigure::Server<first_project::xyparametersConfig> server;
+	  dynamic_reconfigure::Server<first_project::xyparametersConfig> server;
 		dynamic_reconfigure::Server<first_project::xyparametersConfig>::CallbackType f;
 		float newX, newY;
 
@@ -54,7 +55,7 @@ class ackermann{
 			ROS_INFO("Reconfigure request: new xy position: %d, %d", config.newX, config.newY);
 		}
 
-	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR) //callback for message message_filters
+	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR, const first_project::floatStampedConstPtr& steer) //callback for message message_filters
 		{  //here we compute and publish odometry based on ackermann stearing model
 		    //compute dt (delta t)
 		    current_time = ros::Time::now();
@@ -63,24 +64,30 @@ class ackermann{
 		    //get velocities from bag's topics
 		    float vL = speedL -> data;
 		    float vR = speedR -> data;
+				float s = steer -> data;
+				double sA = 0;
 		    double v = 0;
 		    double w = 0;
 
-		    /*
-			    //compute odometry with DIFFERENTIAL DRIVE model
-			    w = (vR - vL)/(double)1.3;
-			    double delta_th = w * dt;
-			    th += delta_th;
+		    //compute odometry with ACKERMANN DRIVE model
+				sA = s / (double)18 * M_PI / (double)180;
+				w = (vR + vL) / 2 * tan(sA) / 1.765;
 
-			    if(th > 2 * M_PI) th -= 2 * M_PI;
-			    if(th < 0) th += 2 * M_PI;
+		    double delta_th = w * dt;
+		    th += delta_th;
 
-			    v = (vR + vL)/(double)2;
-			    double delta_x = v * cos(th) * dt;
-			    double delta_y = v * sin(th) * dt;
-			    x += delta_x;
-			    y += delta_y;
-		    */
+		    if(th > 2 * M_PI) th -= 2 * M_PI;
+		    if(th < 0) th += 2 * M_PI;
+
+		    v = w * 1.765 / sin (sA);
+		    double delta_x = v * cos(th) * dt;
+		    double delta_y = v * sin(th) * dt;
+		    x += delta_x;
+		    y += delta_y;
+
+				ROS_INFO ("TIMEBAG: [%i,%i], dt: [%f] V:(%f) S:(%f) |  X,Y,TH (%f, %f, %f)\n", speedL->header.stamp.sec, speedL->header.stamp.nsec, dt, vL, vR, x, y, th);
+
+
 		    //quaternion created from yaw
 		    geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
 
