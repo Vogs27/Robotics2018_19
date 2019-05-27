@@ -9,9 +9,9 @@
 <node pkg="tf" type="static_transform_publisher" name="right_frame" args="0 -0.65 0 0 0 0 1 base_link_differential Rwheel 100" />
 
 <!-- Add static tf frames for ackermann drive -->
-<node pkg="tf" type="static_transform_publisher" name="left_front_frame" args="0 0.65 0 0 0 0 1 base_link_ackermann Lwheel 100" />
-<node pkg="tf" type="static_transform_publisher" name="right__front_frame" args="0 -0.65 0 0 0 0 1 base_link_ackermann Rwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="left_front_frame" args="0.8825 0.65 0 0 0 0 1 base_link_ackermann LFwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="right__front_frame" args="0.8825 -0.65 0 0 0 0 1 base_link_ackermann RFwheel 100" />
 
-<node pkg="tf" type="static_transform_publisher" name="left__rear_frame" args="-1.765 0.65 0 0 0 0 1 base_link_ackermann Lwheel 100" />
-<node pkg="tf" type="static_transform_publisher" name="right_rear_frame" args="-1.765 -0.65 0 0 0 0 1 base_link_ackermann Rwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="left__rear_frame" args="-0.8825 0.65 0 0 0 0 1 base_link_ackermann LRwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="right_rear_frame" args="-0.8825 -0.65 0 0 0 0 1 base_link_ackermann RRwheel 100" />
 </launch>
