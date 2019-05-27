@@ -4,8 +4,14 @@
 <node pkg="first_project" type = "differential" name = "differential"/>
 <node pkg="first_project" type = "aggregator" name = "aggregator"/>
 
+<!-- Add static tf frames for differential drive -->
+<node pkg="tf" type="static_transform_publisher" name="left_frame" args="0 0.65 0 0 0 0 1 base_link_differential Lwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="right_frame" args="0 -0.65 0 0 0 0 1 base_link_differential Rwheel 100" />
 
-<!--Add static tf frames-->
-<node pkg="tf" type="static_transform_publisher" name="left_frame" args="0 0.65 0 0 0 0 1 base_link_ackermann Lwheel 100" />
-<node pkg="tf" type="static_transform_publisher" name="right_frame" args="0 -0.65 0 0 0 0 1 base_link_ackermann Rwheel 100" />
+<!-- Add static tf frames for ackermann drive -->
+<node pkg="tf" type="static_transform_publisher" name="left_front_frame" args="0 0.65 0 0 0 0 1 base_link_ackermann Lwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="right__front_frame" args="0 -0.65 0 0 0 0 1 base_link_ackermann Rwheel 100" />
+
+<node pkg="tf" type="static_transform_publisher" name="left__rear_frame" args="-1.765 0.65 0 0 0 0 1 base_link_ackermann Lwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="right_rear_frame" args="-1.765 -0.65 0 0 0 0 1 base_link_ackermann Rwheel 100" />
 </launch>
