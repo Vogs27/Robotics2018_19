@@ -1,0 +1,11 @@
+<launch>
+<!--Launch all the nodes-->
+<node pkg="first_project" type = "ackermann" name = "ackermann"/>
+<node pkg="first_project" type = "differential" name = "differential"/>
+<node pkg="first_project" type = "aggregator" name = "aggregator"/>
+
+
+<!--Add static tf frames-->
+<node pkg="tf" type="static_transform_publisher" name="left_frame" args="0 0.65 0 0 0 0 1 base_link_ackermann Lwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="right_frame" args="0 -0.65 0 0 0 0 1 base_link_ackermann Rwheel 100" />
+</launch>

@@ -7,7 +7,7 @@
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <dynamic_reconfigure/server.h>
-#include <first_project/parametersConfig.h>
+#include <first_project/xyparametersConfig.h>
 
 #define _USE_MATH_DEFINES
 
@@ -17,10 +17,10 @@ double th = 0.0;
 
 ros::Time current_time, last_time;
 
-class pub_tf_odom{
+class differential_drive{
 
 	public:
-		pub_tf_odom(){
+		differential_drive(){
 
 			  message_filters::Subscriber<first_project::floatStamped> speedL(n, "speedL_stamped", 1);
 			  message_filters::Subscriber<first_project::floatStamped> speedR(n, "speedR_stamped", 1);
@@ -30,12 +30,9 @@ class pub_tf_odom{
 
 			  current_time = ros::Time::now();
 			  last_time = current_time;
-			  odom_pub = n.advertise<nav_msgs::Odometry>("world", 50);
+			  odom_pub = n.advertise<nav_msgs::Odometry>("world_differential", 50);
 
-			  sync.registerCallback(boost::bind(&pub_tf_odom::callback, this, _1, _2));
-
-			  f = boost::bind(&pub_tf_odom::callbackParam, this, _1, _2);
-			  server.setCallback(f);
+			  sync.registerCallback(boost::bind(&differential_drive::callback, this, _1, _2));
 			ros::spin();
 		}
 
@@ -44,16 +41,17 @@ class pub_tf_odom{
 		tf::TransformBroadcaster odom_broadcaster; //transformation broadcaster
 		geometry_msgs::TransformStamped odom_trans;
 		ros::Publisher odom_pub; //odometry topic publisher
-		dynamic_reconfigure::Server<first_project::parametersConfig> server;
-		dynamic_reconfigure::Server<first_project::parametersConfig>::CallbackType f;
-		int steeringMode;
+		dynamic_reconfigure::Server<first_project::xyparametersConfig> server;
+		dynamic_reconfigure::Server<first_project::xyparametersConfig>::CallbackType f;
 
-	void callbackParam(first_project::parametersConfig &config, uint32_t level) {
-		steeringMode = config.odom_mode;
-		ROS_INFO("Reconfigure request: steering param: %d", config.odom_mode);
+	void callbackParam(first_project::xyparametersConfig &config, uint32_t level) { //callback for dynamic reconfigure
+		x = config.newX;
+		y = config.newY;
+		ROS_INFO("Reconfigure request: new xy position: %d, %d", config.newX, config.newY);
 	}
-	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR)
-		{
+
+	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR) //callback for message message_filters
+		{   //here we compute and publish odometry based on differential drive model
 		    //compute dt (delta t)
 		    current_time = ros::Time::now();
 		    double dt = (current_time - last_time).toSec();
@@ -64,24 +62,18 @@ class pub_tf_odom{
 		    double v = 0;
 		    double w = 0;
 
-		    if(steeringMode == 0){
-			    //compute odometry with DIFFERENTIAL DRIVE model
-			    w = (vR - vL)/(double)1.3;
-			    double delta_th = w * dt;
-			    th += delta_th;
+		 	//compute odometry with DIFFERENTIAL DRIVE model
+			w = (vR - vL)/(double)1.3;
+			double delta_th = w * dt;
+			th += delta_th;
+			if(th > 2 * M_PI) th -= 2 * M_PI;
+			if(th < 0) th += 2 * M_PI;
 
-			    if(th > 2 * M_PI) th -= 2 * M_PI;
-			    if(th < 0) th += 2 * M_PI;
-
-			    v = (vR + vL)/(double)2;
-			    double delta_x = v * cos(th) * dt;
-			    double delta_y = v * sin(th) * dt;
-			    x += delta_x;
-			    y += delta_y;
-		    }
-		    else{
-			//compute odometry with ACKERMANN model
-		    }
+			v = (vR + vL)/(double)2;
+			double delta_x = v * cos(th) * dt;
+			double delta_y = v * sin(th) * dt;
+			x += delta_x;
+			y += delta_y;
 
 		 // ROS_INFO ("TIMEBAG: [%i,%i], dt: [%f], L: (%f), R: (%f) | X,Y,TH (%f, %f, %f)\n", speedL->header.stamp.sec, speedL->header.stamp.nsec, dt, vL, vR, x, y, th);
 
@@ -92,7 +84,7 @@ class pub_tf_odom{
 
 		    odom_trans.header.stamp = current_time;
 		    odom_trans.header.frame_id = "world";
-		    odom_trans.child_frame_id = "base_link";
+		    odom_trans.child_frame_id = "base_link_differential";
 
 		    odom_trans.transform.translation.x = x;
 		    odom_trans.transform.translation.y = y;
@@ -130,8 +122,8 @@ class pub_tf_odom{
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "subscriber_sync");
-  pub_tf_odom my_pub;
+  ros::init(argc, argv, "differential");
+  differential_drive my_differential_drive;
   ros::spin();
 
   return 0;
