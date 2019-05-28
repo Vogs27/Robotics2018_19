@@ -24,15 +24,12 @@ class tf_odom_pub{
 			  typedef message_filters::sync_policies::ApproximateTime<first_project::floatStamped, first_project::floatStamped, first_project::floatStamped> MySyncPolicy;
 			  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), speedL, speedR, steer); //sync speedL_stamped, speedR_stamped and steer_stamped topics
 
+			  odom_pub = n.advertise<nav_msgs::Odometry>("world", 50); //create odometry topic Publisher
+
 			  current_time = ros::Time::now(); //take first sys time value for dt calculation
 			  last_time = current_time; //last time is the same @ the first time
 
-			  odom_pub = n.advertise<nav_msgs::Odometry>("world", 50); //create odometry topic Publisher
-
-			  sync.registerCallback(boost::bind(&tf_odom_pub::callback, this, _1, _2, _3)); //attach callback for message filter
-
-		/*	  steeringReconfigure = boost::bind(&tf_odom_pub::callbackSteering, this, _1, _2); //attach callback for dynamic reconfigure of steering model
-			  serverSteering.setCallback(steeringReconfigure); */
+				sync.registerCallback(boost::bind(&tf_odom_pub::callback, this, _1, _2, _3)); //attach callback for message filter
 
 			  XYreconfigure = boost::bind(&tf_odom_pub::callbackSetXY, this, _1, _2); //attach callback for dynamic reconfigure of xy position
 			  serverXY.setCallback(XYreconfigure);
@@ -48,11 +45,8 @@ class tf_odom_pub{
 
 		ros::Publisher odom_pub; //odometry topic publisher
 
-	/*	dynamic_reconfigure::Server<first_project::steeringParametersConfig> serverSteering; //create a parameter server for steeringMode
-		dynamic_reconfigure::Server<first_project::steeringParametersConfig>::CallbackType steeringReconfigure;*/
-
 		dynamic_reconfigure::Server<first_project::xyparametersConfig> serverXY; //create a parameter server for x, y reconfigure
-  		dynamic_reconfigure::Server<first_project::xyparametersConfig>::CallbackType XYreconfigure;
+  	dynamic_reconfigure::Server<first_project::xyparametersConfig>::CallbackType XYreconfigure;
 
 		ros::Time current_time, last_time;
 		int steeringMode;
@@ -62,12 +56,6 @@ class tf_odom_pub{
 		double x_ackermann = 0.0;
 		double y_ackermann = 0.0;
 		double th_ackermann = 0.0;
-
-
-/*	void callbackSteering(first_project::steeringParametersConfig &config, uint32_t level) { //callback for steering model reconfigure
-		steeringMode = config.odom_mode;
-		ROS_INFO("Reconfigure request: steering param: %d", config.odom_mode);
-	}*/
 
 	void callbackSetXY(first_project::xyparametersConfig &config, uint32_t level) { //callback for x, y position dynamic reconfigure
 			char steeringString[13];
@@ -83,7 +71,6 @@ class tf_odom_pub{
 
 	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR, const first_project::floatStampedConstPtr& steer)  //callback for message filter
 		{
-
 		    //compute dt (delta t)
 		    current_time = ros::Time::now();
 		    double dt = (current_time - last_time).toSec();
