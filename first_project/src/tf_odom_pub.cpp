@@ -76,7 +76,7 @@ class tf_odom_pub{
 			ROS_INFO("Reconfigure request: new xy position: %f, %f", config.newX, config.newY);
 	}
 
-	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR)  //callback for message filter
+	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR, const first_project::floatStampedConstPtr& steer)  //callback for message filter
 		{
 
 		    //compute dt (delta t)
