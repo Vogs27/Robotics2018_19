@@ -42,7 +42,8 @@ class tf_odom_pub{
 	private:
 		ros::NodeHandle n; //node handler
 		tf::TransformBroadcaster odom_broadcaster; //transformation broadcaster
-		geometry_msgs::TransformStamped odom_trans;
+		geometry_msgs::TransformStamped odom_trans_diff;
+		geometry_msgs::TransformStamped odom_trans_ack;
 
 		ros::Publisher odom_pub; //odometry topic publisher
 
@@ -68,15 +69,16 @@ class tf_odom_pub{
 	}
 
 	void callbackSetXY(first_project::xyparametersConfig &config, uint32_t level) { //callback for x, y position dynamic reconfigure
-			x_differential = config.newX;
-			y_differential = config.newY;
-			x_ackermann = config.newX;
-			y_ackermann = config.newY;
+			x_differential = config.coordinates.newX;
+			y_differential = config.coordinates.newY;
+			x_ackermann = config.coordinates.newX;
+			y_ackermann = config.coordinates.newY;
 			ROS_INFO("Reconfigure request: new xy position: %f, %f", config.newX, config.newY);
 	}
 
 	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR)  //callback for message filter
 		{
+
 		    //compute dt (delta t)
 		    current_time = ros::Time::now();
 		    double dt = (current_time - last_time).toSec();
@@ -84,69 +86,126 @@ class tf_odom_pub{
 		    //get velocities from bag's topics
 		    float vL = speedL -> data;
 		    float vR = speedR -> data;
-		    double v = 0;
-		    double w = 0;
+			float s = steer -> data;
 
-		    if(steeringMode == 0){
-			    //compute odometry with DIFFERENTIAL DRIVE model
-			    w = (vR - vL)/(double)1.3;
-			    double delta_th = w * dt;
-			    th += delta_th;
+//______________________DIFFERENTIAL DRIVE_______________________________________________---
+		    double v_diff = 0;
+		    double w_diff = 0;
+			//compute odometry with DIFFERENTIAL DRIVE model
+			w_diff = (vR - vL)/(double)1.3;
+			double delta_th_diff = w_diff * dt;
+			th_differential += delta_th_diff;
 
-			    if(th > 2 * M_PI) th -= 2 * M_PI;
-			    if(th < 0) th += 2 * M_PI;
+			if(th_differential > 2 * M_PI) th_differential -= 2 * M_PI;
+			if(th_differential < 0) th_differential += 2 * M_PI;
 
-			    v = (vR + vL)/(double)2;
-			    double delta_x = v * cos(th) * dt;
-			    double delta_y = v * sin(th) * dt;
-			    x += delta_x;
-			    y += delta_y;
-		    }
-		    else{
-			//compute odometry with ACKERMANN model
-		    }
-
-		 // ROS_INFO ("TIMEBAG: [%i,%i], dt: [%f], L: (%f), R: (%f) | X,Y,TH (%f, %f, %f)\n", speedL->header.stamp.sec, speedL->header.stamp.nsec, dt, vL, vR, x, y, th);
+			v_diff = (vR + vL)/(double)2;
+			double delta_x_diff = v_diff * cos(th_differential) * dt;
+			double delta_y_diff = v_diff * sin(th_differential) * dt;
+			x_differential += delta_x_diff;
+			y_differential += delta_y_diff;
 
 		    //quaternion created from yaw
-		    geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
+		    geometry_msgs::Quaternion odom_quat_diff = tf::createQuaternionMsgFromYaw(th_differential);
 
 		    //transformation published by tf
+		    odom_trans_diff.header.stamp = current_time;
+		    odom_trans_diff.header.frame_id = "world";
+		    odom_trans_diff.child_frame_id = "base_link";
 
-		    odom_trans.header.stamp = current_time;
-		    odom_trans.header.frame_id = "world";
-		    odom_trans.child_frame_id = "base_link";
+		    odom_trans_diff.transform.translation.x = x_differential;
+		    odom_trans_diff.transform.translation.y = y_differential;
+		    odom_trans_diff.transform.translation.z = 0.0;
+		    odom_trans_diff.transform.rotation = odom_quat_diff;
 
-		    odom_trans.transform.translation.x = x;
-		    odom_trans.transform.translation.y = y;
-		    odom_trans.transform.translation.z = 0.0;
-		    odom_trans.transform.rotation = odom_quat;
 
-		    //send the transform with tf
-		    odom_broadcaster.sendTransform(odom_trans);
-
-		 	//publish odometry topic
-		    nav_msgs::Odometry odom;
-		    odom.header.stamp = current_time;
-		    odom.header.frame_id = "world";
+		 	//prepare odometry message
+		    nav_msgs::Odometry odom_diff;
+		    odom_diff.header.stamp = current_time;
+		    odom_diff.header.frame_id = "world";
 
 		    //set the position
-		    odom.pose.pose.position.x = x;
-		    odom.pose.pose.position.y = y;
-		    odom.pose.pose.position.z = 0.0;
-		    odom.pose.pose.orientation = odom_quat;
+		    odom_diff.pose.pose.position.x = x_differential;
+		    odom_diff.pose.pose.position.y = y_differential;
+		    odom_diff.pose.pose.position.z = 0.0;
+		    odom_diff.pose.pose.orientation = odom_quat_diff;
 
 		    //set the velocity
-		    odom.child_frame_id = "base_link";
-		    odom.twist.twist.linear.x = v * cos(th);
-		    odom.twist.twist.linear.y = v * sin(th);
-		    odom.twist.twist.angular.z = w;
+		    odom_diff.child_frame_id = "base_link";
+		    odom_diff.twist.twist.linear.x = v_diff * cos(th_differential);
+		    odom_diff.twist.twist.linear.y = v_diff * sin(th_differential);
+		    odom_diff.twist.twist.angular.z = w_diff;
 
-		    //publish the message
-		    odom_pub.publish(odom);
+//___________________ACKERMANN STEERING_____________________________________
+
+			double sA = 0;
+			double v_ack = 0;
+			double w_ack = 0;
+
+			//compute odometry with ACKERMANN DRIVE model
+			sA = s / (double)18 * M_PI / (double)180;
+			w_ack = (vR + vL) / 2 * tan(sA) / 1.765;
+
+			double delta_th_ack = w_ack * dt;
+			th_ackermann += delta_th_ack;
+
+			if(th_ackermann > 2 * M_PI) th_ackermann -= 2 * M_PI;
+			if(th_ackermann < 0) th_ackermann += 2 * M_PI;
+
+			v_ack = w_ack * 1.765 / sin (sA);
+			double delta_x_ack = v * cos(th_ackermann) * dt;
+			double delta_y_ack = v * sin(th_ackermann) * dt;
+			x_ackermann += delta_x_ack;
+			y_ackermann += delta_y_ack;
+
+			//quaternion created from yaw
+		 geometry_msgs::Quaternion odom_quat_ack = tf::createQuaternionMsgFromYaw(th);
+
+		 //transformation published by tf
+		 odom_trans_ack.header.stamp = current_time;
+		 odom_trans_ack.header.frame_id = "world";
+		 odom_trans_ack.child_frame_id = "base_link";
+
+		 odom_trans_ack.transform.translation.x = x_ackermann;
+		 odom_trans_ack.transform.translation.y = y_ackermann;
+		 odom_trans_ack.transform.translation.z = 0.0;
+		 odom_trans_ack.transform.rotation = odom_quat_ack;
+
+
+		 //prepare odometry message
+		 nav_msgs::Odometry odom_ack;
+		 odom_ack.header.stamp = current_time;
+		 odom_ack.header.frame_id = "world";
+
+		 //set the position
+		 odom_ack.pose.pose.position.x = x_ackermann;
+		 odom_ack.pose.pose.position.y = y_ackermann;
+		 odom_ack.pose.pose.position.z = 0.0;
+		 odom_ack.pose.pose.orientation = odom_quat_ack;
+
+		 //set the velocity
+		 odom_ack.child_frame_id = "base_link";
+		 odom_ack.twist.twist.linear.x = v_ack * cos(th_ackermann);
+		 odom_ack.twist.twist.linear.y = v_ack * sin(th_ackermann);
+		 odom_ack.twist.twist.angular.z = w_ack;
+
+//---------------------------------------------------------------------------
 
 		    last_time = current_time;
 
+			if(steeringMode == 0){
+				//publish odometry with differential drive
+			    odom_pub.publish(odom_diff);
+				//send the transform with tf
+			    odom_broadcaster.sendTransform(odom_trans_diff);
+		  	}
+		  	else{
+		  		//publish odometry with ACKERMANN model
+				odom_pub.publish(odom_ack);
+				//send the transform with tf
+			    odom_broadcaster.sendTransform(odom_trans_ack);
+
+		  	}
 		}
 
 };

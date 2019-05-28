@@ -1,4 +1,0 @@
-ACKERMAN bycicle approx:
-a (wheels steering angle) = steer / 18
-Vfront = w * 1.765 / sin (a)
-w = (Vr + Vl)/2 * Tan (a) / 1.765
