@@ -28,10 +28,10 @@ class tf_odom_pub{
 
 			  odom_pub = n.advertise<nav_msgs::Odometry>("world", 50); //create odometry topic Publisher
 
-			  sync.registerCallback(boost::bind(&tf_odom_pub::callback, this, _1, _2)); //attach callback for message filter
+			  sync.registerCallback(boost::bind(&tf_odom_pub::callback, this, _1, _2, _3)); //attach callback for message filter
 
 			  steeringReconfigure = boost::bind(&tf_odom_pub::callbackSteering, this, _1, _2); //attach callback for dynamic reconfigure of steering model
-			  serverSteering.setCallback(steeringReconfigure);
+			  serverSteering.setCallback(steeringReconfigure); */
 
 			  XYreconfigure = boost::bind(&tf_odom_pub::callbackSetXY, this, _1, _2); //attach callback for dynamic reconfigure of xy position
 			  serverXY.setCallback(XYreconfigure);
@@ -69,10 +69,10 @@ class tf_odom_pub{
 	}
 
 	void callbackSetXY(first_project::xyparametersConfig &config, uint32_t level) { //callback for x, y position dynamic reconfigure
-			x_differential = config.coordinates.newX;
-			y_differential = config.coordinates.newY;
-			x_ackermann = config.coordinates.newX;
-			y_ackermann = config.coordinates.newY;
+			x_differential = config.newX;
+			y_differential = config.newY;
+			x_ackermann = config.newX;
+			y_ackermann = config.newY;
 			ROS_INFO("Reconfigure request: new xy position: %f, %f", config.newX, config.newY);
 	}
 
@@ -153,13 +153,13 @@ class tf_odom_pub{
 			if(th_ackermann < 0) th_ackermann += 2 * M_PI;
 
 			v_ack = w_ack * 1.765 / sin (sA);
-			double delta_x_ack = v * cos(th_ackermann) * dt;
-			double delta_y_ack = v * sin(th_ackermann) * dt;
+			double delta_x_ack = v_ack * cos(th_ackermann) * dt;
+			double delta_y_ack = v_ack * sin(th_ackermann) * dt;
 			x_ackermann += delta_x_ack;
 			y_ackermann += delta_y_ack;
 
 			//quaternion created from yaw
-		 geometry_msgs::Quaternion odom_quat_ack = tf::createQuaternionMsgFromYaw(th);
+		 geometry_msgs::Quaternion odom_quat_ack = tf::createQuaternionMsgFromYaw(th_ackermann);
 
 		 //transformation published by tf
 		 odom_trans_ack.header.stamp = current_time;

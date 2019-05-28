@@ -58,7 +58,7 @@
   <build_depend>roslaunch</build_depend>
 
   <build_depend>dynamic_reconfigure</build_depend>
-  <run_depend>dynamic_reconfigure</run_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
 
 
 
