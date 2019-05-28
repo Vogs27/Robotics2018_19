@@ -43,6 +43,10 @@ class tf_odom_pub{
 		geometry_msgs::TransformStamped odom_trans_diff_lW;
 		geometry_msgs::TransformStamped odom_trans_diff_rW;
 		geometry_msgs::TransformStamped odom_trans_ack;
+		geometry_msgs::TransformStamped odom_trans_ack_lfW;
+		geometry_msgs::TransformStamped odom_trans_ack_rfW;
+		geometry_msgs::TransformStamped odom_trans_ack_lrW;
+		geometry_msgs::TransformStamped odom_trans_ack_rrW;
 
 		ros::Publisher odom_pub; //odometry topic publisher
 
@@ -59,6 +63,7 @@ class tf_odom_pub{
 		double th_ackermann = 0.0;
 		double r_lW=0;
 		double r_rW=0;
+		double r_aW=0;
 
 	void callbackSetXY(first_project::xyparametersConfig &config, uint32_t level) { //callback for x, y position dynamic reconfigure
 			char steeringString[13];
@@ -140,7 +145,7 @@ class tf_odom_pub{
 				if(r_lW > 2 * M_PI) r_lW -= 2 * M_PI;
 				if(r_lW < 0) r_lW += 2 * M_PI;
 
-				//Right Wheel
+			//Right Wheel
 				//quaternion created from yaw
 		    geometry_msgs::Quaternion odom_quat_diff_rW = tf::createQuaternionMsgFromRollPitchYaw(0.0, r_rW, 0.0);
 
@@ -154,7 +159,7 @@ class tf_odom_pub{
 		    odom_trans_diff_rW.transform.translation.z = 0.0;
 		    odom_trans_diff_rW.transform.rotation = odom_quat_diff_rW;
 
-		 	//prepare odometry message
+		   	//prepare odometry message
 		    nav_msgs::Odometry odom_diff_right_wheel;
 		    odom_diff_right_wheel.header.stamp = current_time;
 		    odom_diff_right_wheel.header.frame_id = "right_wheel_differential";
@@ -171,7 +176,7 @@ class tf_odom_pub{
 		    odom_diff.twist.twist.linear.y = v_differential * sin(th_differential);
 		    odom_diff.twist.twist.angular.z = r_rW;
 
-				//Left Wheel
+			//Left Wheel
 				//quaternion created from yaw
 		    geometry_msgs::Quaternion odom_quat_diff_lW = tf::createQuaternionMsgFromRollPitchYaw(0.0, r_lW, 0.0);
 
@@ -226,6 +231,12 @@ class tf_odom_pub{
 			x_ackermann += delta_x_ack;
 			y_ackermann += delta_y_ack;
 
+			//Rotation of wheels
+			r_aW += v_ack* dt;
+
+			if(r_aW > 2 * M_PI) r_aW -= 2 * M_PI;
+			if(r_aW < 0) r_aW += 2 * M_PI;
+
 			//quaternion created from yaw
 		 geometry_msgs::Quaternion odom_quat_ack = tf::createQuaternionMsgFromYaw(th_ackermann);
 
@@ -256,6 +267,69 @@ class tf_odom_pub{
 		 odom_ack.twist.twist.linear.y = v_ack * sin(th_ackermann);
 		 odom_ack.twist.twist.angular.z = w_ack;
 
+		 //quaternion created from yaw
+		 geometry_msgs::Quaternion odom_quat_ack_aW = tf::createQuaternionMsgFromRollPitchYaw(0.0, r_aW, 0.0);
+
+		 			//Rear Left Wheel
+
+		 		    //transformation published by tf
+		 		    odom_trans_ack_lrW.header.stamp = current_time;
+		 		    odom_trans_ack_lrW.header.frame_id = "base_link_ackermann";
+		 		    odom_trans_ack_lrW.child_frame_id = "left_rear_wheel_ackermann";
+
+		 		    odom_trans_ack_lrW.transform.translation.x = 0.0;
+		 		    odom_trans_ack_lrW.transform.translation.y = 0.65;
+		 		    odom_trans_ack_lrW.transform.translation.z = 0.0;
+		 		    odom_trans_ack_lrW.transform.rotation = odom_quat_ack_aW;
+
+		 		 	//prepare odometry message
+		 		    nav_msgs::Odometry odom_ack_left_wheel;
+		 		    odom_ack_left_wheel.header.stamp = current_time;
+		 		    odom_ack_left_wheel.header.frame_id = "left_rear_wheel_ackermann";
+
+		 		    //set the position
+		 		    odom_ack_left_wheel.pose.pose.position.x = -0.65;
+		 		    odom_ack_left_wheel.pose.pose.position.y = 0.0;
+		 		    odom_ack_left_wheel.pose.pose.position.z = 0.0;
+		 		    odom_ack_left_wheel.pose.pose.orientation = odom_quat_ack;
+
+		 		    //set the velocity
+		 		    odom_ack.child_frame_id = "left_rear_wheel_ackermann";
+		 		    odom_ack.twist.twist.linear.x = v_ack * cos(th_ackermann);
+		 		    odom_ack.twist.twist.linear.y = v_ack * sin(th_ackermann);
+		 		    odom_ack.twist.twist.angular.z = r_aW;
+
+
+									//Rear Right Wheel
+										//quaternion created from yaw
+
+								    //transformation published by tf
+								    odom_trans_ack_rrW.header.stamp = current_time;
+								    odom_trans_ack_rrW.header.frame_id = "base_link_ackermann";
+								    odom_trans_ack_rrW.child_frame_id = "right_rear_wheel_ackermann";
+
+								    odom_trans_ack_rrW.transform.translation.x = 0.0;
+								    odom_trans_ack_rrW.transform.translation.y = -0.65;
+								    odom_trans_ack_rrW.transform.translation.z = 0.0;
+								    odom_trans_ack_rrW.transform.rotation = odom_quat_ack_aW;
+
+								 	//prepare odometry message
+								    nav_msgs::Odometry odom_ack_right_wheel;
+								    odom_ack_right_wheel.header.stamp = current_time;
+								    odom_ack_right_wheel.header.frame_id = "right_rear_wheel_ackermann";
+
+								    //set the position
+								    odom_ack_right_wheel.pose.pose.position.x = -0.65;
+								    odom_ack_right_wheel.pose.pose.position.y = 0.0;
+								    odom_ack_right_wheel.pose.pose.position.z = 0.0;
+								    odom_ack_right_wheel.pose.pose.orientation = odom_quat_ack;
+
+								    //set the velocity
+								    odom_ack.child_frame_id = "right_rear_wheel_ackermann";
+								    odom_ack.twist.twist.linear.x = v_ack * cos(th_ackermann);
+								    odom_ack.twist.twist.linear.y = v_ack * sin(th_ackermann);
+								    odom_ack.twist.twist.angular.z = r_aW;
+
 //---------------------------------------------------------------------------
 
 		    last_time = current_time;
@@ -273,7 +347,8 @@ class tf_odom_pub{
 				odom_pub.publish(odom_ack);
 				//send the transform with tf
 			    odom_broadcaster.sendTransform(odom_trans_ack);
-
+					odom_broadcaster.sendTransform(odom_trans_ack_lrW);
+					odom_broadcaster.sendTransform(odom_trans_ack_rrW);
 		  	}
 		}
 
