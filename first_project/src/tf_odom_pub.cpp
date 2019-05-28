@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include <cmath>
+#include <string>
 #include <tf/transform_broadcaster.h>
 #include <nav_msgs/Odometry.h>
 #include <first_project/floatStamped.h>
@@ -30,9 +31,9 @@ class tf_odom_pub{
 
 			  sync.registerCallback(boost::bind(&tf_odom_pub::callback, this, _1, _2, _3)); //attach callback for message filter
 
-			  steeringReconfigure = boost::bind(&tf_odom_pub::callbackSteering, this, _1, _2); //attach callback for dynamic reconfigure of steering model
-			  serverSteering.setCallback(steeringReconfigure); */
-
+			  /*steeringReconfigure = boost::bind(&tf_odom_pub::callbackSteering, this, _1, _2); //attach callback for dynamic reconfigure of steering model
+			  serverSteering.setCallback(steeringReconfigure);
+*/
 			  XYreconfigure = boost::bind(&tf_odom_pub::callbackSetXY, this, _1, _2); //attach callback for dynamic reconfigure of xy position
 			  serverXY.setCallback(XYreconfigure);
 
@@ -47,8 +48,8 @@ class tf_odom_pub{
 
 		ros::Publisher odom_pub; //odometry topic publisher
 
-		dynamic_reconfigure::Server<first_project::steeringParametersConfig> serverSteering; //create a parameter server for steeringMode
-		dynamic_reconfigure::Server<first_project::steeringParametersConfig>::CallbackType steeringReconfigure;
+	/*	dynamic_reconfigure::Server<first_project::steeringParametersConfig> serverSteering; //create a parameter server for steeringMode
+		dynamic_reconfigure::Server<first_project::steeringParametersConfig>::CallbackType steeringReconfigure;*/
 
 		dynamic_reconfigure::Server<first_project::xyparametersConfig> serverXY; //create a parameter server for x, y reconfigure
   		dynamic_reconfigure::Server<first_project::xyparametersConfig>::CallbackType XYreconfigure;
@@ -63,17 +64,21 @@ class tf_odom_pub{
 		double th_ackermann = 0.0;
 
 
-	void callbackSteering(first_project::steeringParametersConfig &config, uint32_t level) { //callback for steering model reconfigure
+/*	void callbackSteering(first_project::steeringParametersConfig &config, uint32_t level) { //callback for steering model reconfigure
 		steeringMode = config.odom_mode;
 		ROS_INFO("Reconfigure request: steering param: %d", config.odom_mode);
-	}
+	}*/
 
 	void callbackSetXY(first_project::xyparametersConfig &config, uint32_t level) { //callback for x, y position dynamic reconfigure
+			char steeringString[13];
 			x_differential = config.newX;
 			y_differential = config.newY;
 			x_ackermann = config.newX;
 			y_ackermann = config.newY;
-			ROS_INFO("Reconfigure request: new xy position: %f, %f", config.newX, config.newY);
+			steeringMode = config.odom_mode;
+			if(steeringMode == 0) strcpy(steeringString,  "differential");
+			if(steeringMode == 1) strcpy(steeringString, "ackermann");
+			ROS_INFO("Reconfigure request: new position (X,Y): %f, %f | %s", config.newX, config.newY, steeringString);
 	}
 
 	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR, const first_project::floatStampedConstPtr& steer)  //callback for message filter
