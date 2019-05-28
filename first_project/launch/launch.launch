@@ -2,6 +2,14 @@
 <node pkg="first_project" type = "tf_odom_pub" name = "tf_odom_pub"/>
 
 <!--Add static tf frames-->
-<node pkg="tf" type="static_transform_publisher" name="left_frame" args="0 0.65 0 0 0 0 1 base_link Lwheel 100" />
-<node pkg="tf" type="static_transform_publisher" name="right_frame" args="0 -0.65 0 0 0 0 1 base_link Rwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="left_frame" args="0 0.65 0 0 0 0 1 base_link_differential Lwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="right_frame" args="0 -0.65 0 0 0 0 1 base_link_differential Rwheel 100" />
+
+<!--Add static frames for ackermann steering -->
+<node pkg="tf" type="static_transform_publisher" name="front_left_frame" args="0 0.65 0 0 0 0 1 base_link_ackermann FLwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="front_right_frame" args="0 -0.65 0 0 0 0 1 base_link_ackermann FRwheel 100" />
+
+<node pkg="tf" type="static_transform_publisher" name="rear_left_frame" args="1.765 0.65 0 0 0 0 1 base_link_ackermann RLwheel 100" />
+<node pkg="tf" type="static_transform_publisher" name="rear_right_frame" args="1.765 -0.65 0 0 0 0 1 base_link_ackermann RRwheel 100" />
+
 </launch>

@@ -116,7 +116,7 @@ class tf_odom_pub{
 		    //transformation published by tf
 		    odom_trans_diff.header.stamp = current_time;
 		    odom_trans_diff.header.frame_id = "world";
-		    odom_trans_diff.child_frame_id = "base_link";
+		    odom_trans_diff.child_frame_id = "base_link_differential";
 
 		    odom_trans_diff.transform.translation.x = x_differential;
 		    odom_trans_diff.transform.translation.y = y_differential;
@@ -136,7 +136,7 @@ class tf_odom_pub{
 		    odom_diff.pose.pose.orientation = odom_quat_diff;
 
 		    //set the velocity
-		    odom_diff.child_frame_id = "base_link";
+		    odom_diff.child_frame_id = "base_link_differential";
 		    odom_diff.twist.twist.linear.x = v_diff * cos(th_differential);
 		    odom_diff.twist.twist.linear.y = v_diff * sin(th_differential);
 		    odom_diff.twist.twist.angular.z = w_diff;
@@ -169,7 +169,7 @@ class tf_odom_pub{
 		 //transformation published by tf
 		 odom_trans_ack.header.stamp = current_time;
 		 odom_trans_ack.header.frame_id = "world";
-		 odom_trans_ack.child_frame_id = "base_link";
+		 odom_trans_ack.child_frame_id = "base_link_ackermann";
 
 		 odom_trans_ack.transform.translation.x = x_ackermann;
 		 odom_trans_ack.transform.translation.y = y_ackermann;
@@ -189,7 +189,7 @@ class tf_odom_pub{
 		 odom_ack.pose.pose.orientation = odom_quat_ack;
 
 		 //set the velocity
-		 odom_ack.child_frame_id = "base_link";
+		 odom_ack.child_frame_id = "base_link_ackermann";
 		 odom_ack.twist.twist.linear.x = v_ack * cos(th_ackermann);
 		 odom_ack.twist.twist.linear.y = v_ack * sin(th_ackermann);
 		 odom_ack.twist.twist.angular.z = w_ack;
