@@ -9,7 +9,6 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <dynamic_reconfigure/server.h>
 #include <first_project/xyparametersConfig.h>
-#include <first_project/steeringParametersConfig.h>
 
 #define _USE_MATH_DEFINES
 
@@ -41,6 +40,8 @@ class tf_odom_pub{
 		ros::NodeHandle n; //node handler
 		tf::TransformBroadcaster odom_broadcaster; //transformation broadcaster
 		geometry_msgs::TransformStamped odom_trans_diff;
+		geometry_msgs::TransformStamped odom_trans_diff_lW;
+		geometry_msgs::TransformStamped odom_trans_diff_rW;
 		geometry_msgs::TransformStamped odom_trans_ack;
 
 		ros::Publisher odom_pub; //odometry topic publisher
@@ -56,6 +57,8 @@ class tf_odom_pub{
 		double x_ackermann = 0.0;
 		double y_ackermann = 0.0;
 		double th_ackermann = 0.0;
+		double r_lW=0;
+		double r_rW=0;
 
 	void callbackSetXY(first_project::xyparametersConfig &config, uint32_t level) { //callback for x, y position dynamic reconfigure
 			char steeringString[13];
@@ -78,22 +81,22 @@ class tf_odom_pub{
 		    //get velocities from bag's topics
 		    float vL = speedL -> data;
 		    float vR = speedR -> data;
-			float s = steer -> data;
+			  float s = steer -> data;
 
 //______________________DIFFERENTIAL DRIVE_______________________________________________---
-		    double v_diff = 0;
-		    double w_diff = 0;
+		    double v_differential = 0;
+		    double w_differential = 0;
 			//compute odometry with DIFFERENTIAL DRIVE model
-			w_diff = (vR - vL)/(double)1.3;
-			double delta_th_diff = w_diff * dt;
+			w_differential = (vR - vL)/(double)1.3;
+			double delta_th_diff = w_differential * dt;
 			th_differential += delta_th_diff;
 
 			if(th_differential > 2 * M_PI) th_differential -= 2 * M_PI;
 			if(th_differential < 0) th_differential += 2 * M_PI;
 
-			v_diff = (vR + vL)/(double)2;
-			double delta_x_diff = v_diff * cos(th_differential) * dt;
-			double delta_y_diff = v_diff * sin(th_differential) * dt;
+			v_differential = (vR + vL)/(double)2;
+			double delta_x_diff = v_differential * cos(th_differential) * dt;
+			double delta_y_diff = v_differential * sin(th_differential) * dt;
 			x_differential += delta_x_diff;
 			y_differential += delta_y_diff;
 
@@ -110,7 +113,6 @@ class tf_odom_pub{
 		    odom_trans_diff.transform.translation.z = 0.0;
 		    odom_trans_diff.transform.rotation = odom_quat_diff;
 
-
 		 	//prepare odometry message
 		    nav_msgs::Odometry odom_diff;
 		    odom_diff.header.stamp = current_time;
@@ -124,9 +126,83 @@ class tf_odom_pub{
 
 		    //set the velocity
 		    odom_diff.child_frame_id = "base_link_differential";
-		    odom_diff.twist.twist.linear.x = v_diff * cos(th_differential);
-		    odom_diff.twist.twist.linear.y = v_diff * sin(th_differential);
-		    odom_diff.twist.twist.angular.z = w_diff;
+		    odom_diff.twist.twist.linear.x = v_differential * cos(th_differential);
+		    odom_diff.twist.twist.linear.y = v_differential * sin(th_differential);
+		    odom_diff.twist.twist.angular.z = w_differential;
+
+				//rotation of wheels
+				r_lW += vL * dt;
+				r_rW += vR * dt;
+
+				if(r_rW > 2 * M_PI) r_rW -= 2 * M_PI;
+				if(r_rW < 0) r_rW += 2 * M_PI;
+
+				if(r_lW > 2 * M_PI) r_lW -= 2 * M_PI;
+				if(r_lW < 0) r_lW += 2 * M_PI;
+
+				//Right Wheel
+				//quaternion created from yaw
+		    geometry_msgs::Quaternion odom_quat_diff_rW = tf::createQuaternionMsgFromRollPitchYaw(0.0, r_rW, 0.0);
+
+		    //transformation published by tf
+		    odom_trans_diff_rW.header.stamp = current_time;
+		    odom_trans_diff_rW.header.frame_id = "base_link_differential";
+		    odom_trans_diff_rW.child_frame_id = "right_wheel_differential";
+
+		    odom_trans_diff_rW.transform.translation.x = 0.0;
+		    odom_trans_diff_rW.transform.translation.y = -0.65;
+		    odom_trans_diff_rW.transform.translation.z = 0.0;
+		    odom_trans_diff_rW.transform.rotation = odom_quat_diff_rW;
+
+		 	//prepare odometry message
+		    nav_msgs::Odometry odom_diff_right_wheel;
+		    odom_diff_right_wheel.header.stamp = current_time;
+		    odom_diff_right_wheel.header.frame_id = "right_wheel_differential";
+
+		    //set the position
+		    odom_diff_right_wheel.pose.pose.position.x = -0.65;
+		    odom_diff_right_wheel.pose.pose.position.y = 0.0;
+		    odom_diff_right_wheel.pose.pose.position.z = 0.0;
+		    odom_diff_right_wheel.pose.pose.orientation = odom_quat_diff;
+
+		    //set the velocity
+		    odom_diff.child_frame_id = "right_wheel_differential";
+		    odom_diff.twist.twist.linear.x = v_differential * cos(th_differential);
+		    odom_diff.twist.twist.linear.y = v_differential * sin(th_differential);
+		    odom_diff.twist.twist.angular.z = r_rW;
+
+				//Left Wheel
+				//quaternion created from yaw
+		    geometry_msgs::Quaternion odom_quat_diff_lW = tf::createQuaternionMsgFromRollPitchYaw(0.0, r_lW, 0.0);
+
+		    //transformation published by tf
+		    odom_trans_diff_lW.header.stamp = current_time;
+		    odom_trans_diff_lW.header.frame_id = "base_link_differential";
+		    odom_trans_diff_lW.child_frame_id = "left_wheel_differential";
+
+		    odom_trans_diff_lW.transform.translation.x = 0.0;
+		    odom_trans_diff_lW.transform.translation.y = 0.65;
+		    odom_trans_diff_lW.transform.translation.z = 0.0;
+		    odom_trans_diff_lW.transform.rotation = odom_quat_diff_lW;
+
+		 	//prepare odometry message
+		    nav_msgs::Odometry odom_diff_left_wheel;
+		    odom_diff_left_wheel.header.stamp = current_time;
+		    odom_diff_left_wheel.header.frame_id = "left_wheel_differential";
+
+		    //set the position
+		    odom_diff_left_wheel.pose.pose.position.x = -0.65;
+		    odom_diff_left_wheel.pose.pose.position.y = 0.0;
+		    odom_diff_left_wheel.pose.pose.position.z = 0.0;
+		    odom_diff_left_wheel.pose.pose.orientation = odom_quat_diff;
+
+		    //set the velocity
+		    odom_diff.child_frame_id = "left_wheel_differential";
+		    odom_diff.twist.twist.linear.x = v_differential * cos(th_differential);
+		    odom_diff.twist.twist.linear.y = v_differential * sin(th_differential);
+		    odom_diff.twist.twist.angular.z = r_lW;
+
+
 
 //___________________ACKERMANN STEERING_____________________________________
 
@@ -163,7 +239,6 @@ class tf_odom_pub{
 		 odom_trans_ack.transform.translation.z = 0.0;
 		 odom_trans_ack.transform.rotation = odom_quat_ack;
 
-
 		 //prepare odometry message
 		 nav_msgs::Odometry odom_ack;
 		 odom_ack.header.stamp = current_time;
@@ -190,6 +265,8 @@ class tf_odom_pub{
 			    odom_pub.publish(odom_diff);
 				//send the transform with tf
 			    odom_broadcaster.sendTransform(odom_trans_diff);
+					odom_broadcaster.sendTransform(odom_trans_diff_rW);
+					odom_broadcaster.sendTransform(odom_trans_diff_lW);
 		  	}
 		  	else{
 		  		//publish odometry with ACKERMANN model
