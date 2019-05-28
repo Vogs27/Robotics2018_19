@@ -31,7 +31,7 @@ class tf_odom_pub{
 			  sync.registerCallback(boost::bind(&tf_odom_pub::callback, this, _1, _2, _3)); //attach callback for message filter
 
 			  steeringReconfigure = boost::bind(&tf_odom_pub::callbackSteering, this, _1, _2); //attach callback for dynamic reconfigure of steering model
-			  serverSteering.setCallback(steeringReconfigure); */
+			  serverSteering.setCallback(steeringReconfigure);
 
 			  XYreconfigure = boost::bind(&tf_odom_pub::callbackSetXY, this, _1, _2); //attach callback for dynamic reconfigure of xy position
 			  serverXY.setCallback(XYreconfigure);
