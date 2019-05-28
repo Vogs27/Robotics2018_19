@@ -38,7 +38,7 @@ class aggregator{
 			  server.setCallback(f);
 			  ros::Rate rate(10.0);
 
-			  while (node.ok()){
+			  while (n.ok()){
 			    tf::StampedTransform transform;
 			    try{
 					if(steeringMode == 0){ //use differential drive

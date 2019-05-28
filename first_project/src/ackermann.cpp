@@ -52,7 +52,7 @@ class ackermann{
 		void callbackParam(first_project::xyparametersConfig &config, uint32_t level) { //callback for dynamic reconfigure
 			x = config.newX;
 			y = config.newY;
-			ROS_INFO("Reconfigure request: new xy position: %d, %d", config.newX, config.newY);
+			ROS_INFO("Reconfigure request: new xy position: %f, %f", config.newX, config.newY);
 		}
 
 	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR, const first_project::floatStampedConstPtr& steer) //callback for message message_filters
