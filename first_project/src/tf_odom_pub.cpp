@@ -162,22 +162,6 @@ private:
 		odom_trans_diff_rW.transform.translation.z = 0.0;
 		odom_trans_diff_rW.transform.rotation = odom_quat_diff_rW;
 
-		//prepare odometry message
-		nav_msgs::Odometry odom_diff_right_wheel;
-		odom_diff_right_wheel.header.stamp = current_time;
-		odom_diff_right_wheel.header.frame_id = "right_wheel_differential";
-
-		//set the position
-		odom_diff_right_wheel.pose.pose.position.x = 0.0;
-		odom_diff_right_wheel.pose.pose.position.y = -0.65;
-		odom_diff_right_wheel.pose.pose.position.z = 0.0;
-		odom_diff_right_wheel.pose.pose.orientation = odom_quat_diff_rW;
-
-		//set the velocity
-		odom_diff.child_frame_id = "right_wheel_differential";
-		odom_diff.twist.twist.linear.x = v_differential * cos(th_differential);
-		odom_diff.twist.twist.linear.y = v_differential * sin(th_differential);
-		odom_diff.twist.twist.angular.z = r_rW;
 
 		//Left Wheel
 		//quaternion created from pitch
@@ -193,22 +177,6 @@ private:
 		odom_trans_diff_lW.transform.translation.z = 0.0;
 		odom_trans_diff_lW.transform.rotation = odom_quat_diff_lW;
 
-		//prepare odometry message
-		nav_msgs::Odometry odom_diff_left_wheel;
-		odom_diff_left_wheel.header.stamp = current_time;
-		odom_diff_left_wheel.header.frame_id = "left_wheel_differential";
-
-		//set the position
-		odom_diff_left_wheel.pose.pose.position.x = 0.0;
-		odom_diff_left_wheel.pose.pose.position.y = 0.65;
-		odom_diff_left_wheel.pose.pose.position.z = 0.0;
-		odom_diff_left_wheel.pose.pose.orientation = odom_quat_diff_lW;
-
-		//set the velocity
-		odom_diff.child_frame_id = "left_wheel_differential";
-		odom_diff.twist.twist.linear.x = v_differential * cos(th_differential);
-		odom_diff.twist.twist.linear.y = v_differential * sin(th_differential);
-		odom_diff.twist.twist.angular.z = r_lW;
 
 
 
@@ -219,7 +187,7 @@ private:
 		double w_ack = 0;
 		double sAr = 0; //steering angle right
 		double sAl = 0; //steering angle left
-		dpuble RICR = 0; //radius instantaneus center of rotation
+		double RICR = 0; //radius instantaneus center of rotation
 
 		//compute odometry with ACKERMANN DRIVE model
 		sA = s / (double)18 * M_PI / (double)180;
@@ -309,24 +277,6 @@ private:
 		odom_trans_ack_lrW.transform.translation.z = 0.0;
 		odom_trans_ack_lrW.transform.rotation = odom_quat_ack_rLW;
 
-		//prepare odometry message
-		nav_msgs::Odometry odom_ack_left_wheel;
-		odom_ack_left_wheel.header.stamp = current_time;
-		odom_ack_left_wheel.header.frame_id = "left_rear_wheel_ackermann";
-
-		//set the position
-		odom_ack_left_wheel.pose.pose.position.x = 0.0;
-		odom_ack_left_wheel.pose.pose.position.y = 0.65;
-		odom_ack_left_wheel.pose.pose.position.z = 0.0;
-		odom_ack_left_wheel.pose.pose.orientation = odom_quat_ack_rLW;
-
-		//set the velocity
-		odom_ack.child_frame_id = "left_rear_wheel_ackermann";
-		odom_ack.twist.twist.linear.x = v_ack * cos(th_ackermann);
-		odom_ack.twist.twist.linear.y = v_ack * sin(th_ackermann);
-		odom_ack.twist.twist.angular.z = r_aLW;
-
-
 		//Rear Right Wheel
 		//quaternion created from pitch
 		geometry_msgs::Quaternion odom_quat_ack_rRW = tf::createQuaternionMsgFromRollPitchYaw(0.0, r_aRW, 0.0);
@@ -340,22 +290,6 @@ private:
 		odom_trans_ack_rrW.transform.translation.z = 0.0;
 		odom_trans_ack_rrW.transform.rotation = odom_quat_ack_rRW;
 
-		//prepare odometry message
-		nav_msgs::Odometry odom_ack_right_wheel;
-		odom_ack_right_wheel.header.stamp = current_time;
-		odom_ack_right_wheel.header.frame_id = "right_rear_wheel_ackermann";
-
-		//set the position
-		odom_ack_right_wheel.pose.pose.position.x = 0.0;
-		odom_ack_right_wheel.pose.pose.position.y = -0.65;
-		odom_ack_right_wheel.pose.pose.position.z = 0.0;
-		odom_ack_right_wheel.pose.pose.orientation = odom_quat_ack_rRW;
-
-		//set the velocity
-		odom_ack.child_frame_id = "right_rear_wheel_ackermann";
-		odom_ack.twist.twist.linear.x = v_ack * cos(th_ackermann);
-		odom_ack.twist.twist.linear.y = v_ack * sin(th_ackermann);
-		odom_ack.twist.twist.angular.z = r_aRW;
 
 		//Front wheels
 
@@ -373,23 +307,6 @@ private:
 		odom_trans_ack_lfW.transform.translation.z = 0.0;
 		odom_trans_ack_lfW.transform.rotation = odom_quat_ack_flW;
 
-		//prepare odometry message
-		nav_msgs::Odometry odom_ack_left_front_wheel;
-		odom_ack_left_front_wheel.header.stamp = current_time;
-		odom_ack_left_front_wheel.header.frame_id = "left_front_wheel_ackermann";
-
-		//set the position
-		odom_ack_left_front_wheel.pose.pose.position.x = 1.765;
-		odom_ack_left_front_wheel.pose.pose.position.y = 0.65;
-		odom_ack_left_front_wheel.pose.pose.position.z = 0.0;
-		odom_ack_left_front_wheel.pose.pose.orientation = odom_quat_ack_flW;
-
-		//set the velocity
-		odom_ack.child_frame_id = "left_front_wheel_ackermann";
-		odom_ack.twist.twist.linear.x = v_ack * cos(th_ackermann);
-		odom_ack.twist.twist.linear.y = v_ack * sin(th_ackermann);
-		odom_ack.twist.twist.angular.z = r_aLFW;
-
 
 		//Rear Right Wheel
 		//quaternion created from pitch and yaw
@@ -404,22 +321,6 @@ private:
 		odom_trans_ack_rfW.transform.translation.z = 0.0;
 		odom_trans_ack_rfW.transform.rotation = odom_quat_ack_frW;
 
-		//prepare odometry message
-		nav_msgs::Odometry odom_ack_right_front_wheel;
-		odom_ack_right_front_wheel.header.stamp = current_time;
-		odom_ack_right_front_wheel.header.frame_id = "right_front_wheel_ackermann";
-
-		//set the position
-		odom_ack_right_front_wheel.pose.pose.position.x = 1.765
-		odom_ack_right_front_wheel.pose.pose.position.y = -0.65;
-		odom_ack_right_front_wheel.pose.pose.position.z = 0.0;
-		odom_ack_right_front_wheel.pose.pose.orientation = odom_quat_ack_frW;
-
-		//set the velocity
-		odom_ack.child_frame_id = "right_front_wheel_ackermann";
-		odom_ack.twist.twist.linear.x = v_ack * cos(th_ackermann);
-		odom_ack.twist.twist.linear.y = v_ack * sin(th_ackermann);
-		odom_ack.twist.twist.angular.z = r_aRFW;
 
 		//___________________________________________________________________________
 
