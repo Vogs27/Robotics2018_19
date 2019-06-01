@@ -57,6 +57,8 @@ private:
 	int steeringMode;
 	double x_differential = 0.0;
 	double y_differential = 0.0;
+	double x_origin = 0.0;
+	double y_origin = 0.0;
 	double th_differential = 0.0;
 	double x_ackermann = 0.0;
 	double y_ackermann = 0.0;
@@ -70,10 +72,16 @@ private:
 
 	void callbackSetXY(first_project::xyparametersConfig &config, uint32_t level) { //callback for x, y position dynamic reconfigure
 		char steeringString[13];
-		x_differential = config.newX;
-		y_differential = config.newY;
-		x_ackermann = config.newX;
-		y_ackermann = config.newY;
+		if(x_origin != config.newX || y_origin != config.newY){
+			x_origin = config.newX;
+			y_origin = config.newY;
+			x_differential = config.newX;
+			y_differential = config.newY;
+			x_ackermann = config.newX;
+			y_ackermann = config.newY;
+			th_ackermann = 0;
+			th_differential = 0;
+		}
 		steeringMode = config.odom_mode;
 		if(steeringMode == 0) strcpy(steeringString,  "differential");
 		if(steeringMode == 1) strcpy(steeringString, "ackermann");
