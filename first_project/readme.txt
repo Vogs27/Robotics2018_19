@@ -1,6 +1,6 @@
 Team members:
 - Alessandro Andrea Vogrig (matr. 845461 - cod pers. 10527163)
-- Elena Rosalba Schinelli (matr. - cod pers.  )
+- Elena Rosalba Schinelli (matr. 844329 - cod pers. 10501436)
 ________________________________________________________________________________
 Package name: first_project
 Node name: tf_odom_pub
@@ -10,7 +10,8 @@ first_project
 ├── cfg
 │   └── parameters.cfg
 ├── msg
-│   └── floatedStamped.msg
+│   ├── floatedStamped.msg
+|   └── customPoses.msg
 ├── src
 │   └── tf_odom_pub.cpp
 ├── CMakeLists.txt
@@ -20,6 +21,7 @@ ________________________________________________________________________________
 File description:
 - parameters.cfg: contains definition of parameters used with dynamic reconfigure
 - floatedStamped.msg: contains custom message definition, given with bags
+- customPoses.msg: contains custom message definition to publish odometry
 - tf_odom_pub.cpp: our main node. Takes care of syncronizing all the various topics necessary to compute odometry.
     Computes odometry and publishes it via topic and tf.
 ________________________________________________________________________________
@@ -40,8 +42,8 @@ We publish poses on topic "/custom_pose".
 ________________________________________________________________________________
 Custom message structure:
 We publish our poses also on "/custom_pose" topic.
-Messages published on this topic ar "customPoses" messages.
-They are composed by 3 64 bit float called "x", "y", and "th", rappresenting coordinates and direction of base_link and a string called "model" rappresenting the type of kinematic model used.
+Messages published on this topic are "customPoses" messages.
+They are composed by 3 64 bit float called "x", "y", and "th", representing coordinates and direction of base_link and a string called "model" representing the type of kinematic model used.
 ________________________________________________________________________________
 How to run our project:
 1. Place the package folder in your ROS workspace and compile it with catkin_make
