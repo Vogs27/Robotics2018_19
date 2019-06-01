@@ -1,4 +1,3 @@
-Header header
 string model
 float64 x
 float64 y
