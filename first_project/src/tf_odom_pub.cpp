@@ -9,6 +9,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <dynamic_reconfigure/server.h>
 #include <first_project/xyparametersConfig.h>
+#include <first_project/customPoses.h>
 
 #define _USE_MATH_DEFINES
 
@@ -24,6 +25,7 @@ public:
 		message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), speedL, speedR, steer); //sync speedL_stamped, speedR_stamped and steer_stamped topics
 
 		odom_pub = n.advertise<nav_msgs::Odometry>("world", 50); //create odometry topic Publisher
+		custom_poses_pub = n.advertise<first_project::customPoses>("custom_pose", 50); //create custom poses topic publisher
 
 		current_time = ros::Time::now(); //take first sys time value for dt calculation
 		last_time = current_time; //last time is the same @ the first time
@@ -49,6 +51,7 @@ private:
 	geometry_msgs::TransformStamped odom_trans_ack_rrW;
 
 	ros::Publisher odom_pub; //odometry topic publisher
+	ros::Publisher custom_poses_pub;
 
 	dynamic_reconfigure::Server<first_project::xyparametersConfig> serverXY; //create a parameter server for x, y reconfigure
 	dynamic_reconfigure::Server<first_project::xyparametersConfig>::CallbackType XYreconfigure;
@@ -123,6 +126,7 @@ private:
 
 		//prepare odometry message
 		nav_msgs::Odometry odom_diff;
+		first_project::customPoses diff_pose;
 		odom_diff.header.stamp = current_time;
 		odom_diff.header.frame_id = "world";
 
@@ -137,6 +141,11 @@ private:
 		odom_diff.twist.twist.linear.x = v_differential * cos(th_differential);
 		odom_diff.twist.twist.linear.y = v_differential * sin(th_differential);
 		odom_diff.twist.twist.angular.z = w_differential;
+
+		diff_pose.model = "Differential drive";
+		diff_pose.x= x_differential;
+		diff_pose.y= y_differential;
+		diff_pose.th= th_differential;
 
 		//rotation of wheels
 		r_lW += vL * dt;
@@ -248,6 +257,7 @@ private:
 
 		//prepare odometry message
 		nav_msgs::Odometry odom_ack;
+		first_project::customPoses ack_pose;
 		odom_ack.header.stamp = current_time;
 		odom_ack.header.frame_id = "world";
 
@@ -262,6 +272,11 @@ private:
 		odom_ack.twist.twist.linear.x = v_ack * cos(th_ackermann);
 		odom_ack.twist.twist.linear.y = v_ack * sin(th_ackermann);
 		odom_ack.twist.twist.angular.z = w_ack;
+
+		ack_pose.model = "Ackermann";
+		ack_pose.x = x_ackermann;
+		ack_pose.y = y_ackermann;
+		ack_pose.th = th_ackermann;
 
 		//Rear Left Wheel
 		//quaternion created from pitch
@@ -333,6 +348,7 @@ private:
 			odom_broadcaster.sendTransform(odom_trans_diff);
 			odom_broadcaster.sendTransform(odom_trans_diff_rW);
 			odom_broadcaster.sendTransform(odom_trans_diff_lW);
+			custom_poses_pub.publish(diff_pose);
 		}
 		else{
 			//publish odometry with ACKERMANN model
@@ -343,6 +359,7 @@ private:
 			odom_broadcaster.sendTransform(odom_trans_ack_rrW);
 			odom_broadcaster.sendTransform(odom_trans_ack_lfW);
 			odom_broadcaster.sendTransform(odom_trans_ack_rfW);
+			custom_poses_pub.publish(ack_pose);
 		}
 	}
 

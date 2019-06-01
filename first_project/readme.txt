@@ -2,11 +2,11 @@ Team members:
 - Alessandro Andrea Vogrig (matr. 845461 - cod pers. 10527163)
 - Elena Rosalba Schinelli (matr. - cod pers.  )
 ________________________________________________________________________________
-Package name: firts_project
+Package name: first_project
 Node name: tf_odom_pub
 ________________________________________________________________________________
 Package structure:
-firts_project
+first_project
 ├── cfg
 │   └── parameters.cfg
 ├── msg
@@ -36,6 +36,12 @@ There are also two more frames for differential drive model rappresenting the tw
 For the ackermann steering model, there are four more frames, also rappresenting the wheels. They are called "right_rear_wheel_ackermann", "left_rear_wheel_ackermann",
     "left_front_wheel_ackermann" and "right_front_wheel_ackermann", children of "base_link_ackermann".
 We also publish odometry with "nav_msgs::Odometry" on "/world" topic.
+We publish poses on topic "/custom_pose".
+________________________________________________________________________________
+Custom message structure:
+We publish our poses also on "/custom_pose" topic.
+Messages published on this topic ar "customPoses" messages.
+They are composed by 3 64 bit float called "x", "y", and "th", rappresenting coordinates and direction of base_link and a string called "model" rappresenting the type of kinematic model used.
 ________________________________________________________________________________
 How to run our project:
 1. Place the package folder in your ROS workspace and compile it with catkin_make
