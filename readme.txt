@@ -50,8 +50,9 @@ They are composed by 3 64 bit float called "x", "y", and "th", representing coor
 ________________________________________________________________________________
 How to run our project:
 1. Place the package folder in your ROS workspace and compile it with catkin_make
-2. Run roscore and run the bag file in a separate terminal
-3. Start our node with rosrun. Prototipe: rosrun first_project tf_odom_pub
+2. Run command "source devel/setup.bash" in your workspace root
+3. Run roscore and run the bag file in a separate terminal
+4. Start our node with rosrun. Prototipe: rosrun first_project tf_odom_pub
 
 Notes: to show correctly tf in rviz, you must set the static frame name as "world". You can also draw the base_link point using the "odometry" function in 
 	rviz and subscribing to "world" topic.
