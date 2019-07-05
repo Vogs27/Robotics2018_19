@@ -25,7 +25,6 @@ public:
 		message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), speedL, speedR, steer); //sync speedL_stamped, speedR_stamped and steer_stamped topics
 
 		odom_pub = n.advertise<nav_msgs::Odometry>("world", 50); //create odometry topic Publisher
-		custom_poses_pub = n.advertise<first_project::customPoses>("custom_pose", 50); //create custom poses topic publisher
 
 		current_time = ros::Time::now(); //take first sys time value for dt calculation
 		last_time = current_time; //last time is the same @ the first time
@@ -41,9 +40,6 @@ public:
 private:
 	ros::NodeHandle n; //node handler
 	tf::TransformBroadcaster odom_broadcaster; //transformation broadcaster
-	geometry_msgs::TransformStamped odom_trans_diff;
-	geometry_msgs::TransformStamped odom_trans_diff_lW;
-	geometry_msgs::TransformStamped odom_trans_diff_rW;
 	geometry_msgs::TransformStamped odom_trans_ack;
 	geometry_msgs::TransformStamped odom_trans_ack_lfW;
 	geometry_msgs::TransformStamped odom_trans_ack_rfW;
@@ -73,24 +69,6 @@ private:
 	double r_aLFW=0; //radiants ackermann front left weel
 	double r_aRFW=0; //radiants ackermann front right weel
 
-	void callbackSetXY(first_project::xyparametersConfig &config, uint32_t level) { //callback for x, y position dynamic reconfigure
-		char steeringString[13];
-		if(x_origin != config.newX || y_origin != config.newY){
-			x_origin = config.newX;
-			y_origin = config.newY;
-			x_differential = config.newX;
-			y_differential = config.newY;
-			x_ackermann = config.newX;
-			y_ackermann = config.newY;
-			th_ackermann = 0;
-			th_differential = 0;
-		}
-		steeringMode = config.odom_mode;
-		if(steeringMode == 0) strcpy(steeringString,  "differential");
-		if(steeringMode == 1) strcpy(steeringString, "ackermann");
-		ROS_DEBUG("Reconfigure request: new position (X,Y): %f, %f | %s", config.newX, config.newY, steeringString);
-	}
-
 	void callback(const first_project::floatStampedConstPtr& speedL, const first_project::floatStampedConstPtr& speedR, const first_project::floatStampedConstPtr& steer)  //callback for message filter
 	{
 		//compute dt (delta t)
@@ -101,101 +79,6 @@ private:
 		float vL = speedL -> data;
 		float vR = speedR -> data;
 		float s = steer -> data;
-
-		//______________________DIFFERENTIAL DRIVE_______________________________________________
-		double v_differential = 0;
-		double w_differential = 0;
-		//compute odometry with DIFFERENTIAL DRIVE model
-		w_differential = (vR - vL)/(double)1.3;
-		double delta_th_diff = w_differential * dt;
-		th_differential += delta_th_diff;
-
-		if(th_differential > 2 * M_PI) th_differential -= 2 * M_PI;
-		if(th_differential < 0) th_differential += 2 * M_PI;
-
-		v_differential = (vR + vL)/(double)2;
-		double delta_x_diff = v_differential * cos(th_differential) * dt;
-		double delta_y_diff = v_differential * sin(th_differential) * dt;
-		x_differential += delta_x_diff;
-		y_differential += delta_y_diff;
-
-		//quaternion created from yaw
-		geometry_msgs::Quaternion odom_quat_diff = tf::createQuaternionMsgFromYaw(th_differential);
-
-		//transformation published by tf
-		odom_trans_diff.header.stamp = current_time;
-		odom_trans_diff.header.frame_id = "world";
-		odom_trans_diff.child_frame_id = "base_link_differential";
-
-		odom_trans_diff.transform.translation.x = x_differential;
-		odom_trans_diff.transform.translation.y = y_differential;
-		odom_trans_diff.transform.translation.z = 0.0;
-		odom_trans_diff.transform.rotation = odom_quat_diff;
-
-		//prepare odometry message
-		nav_msgs::Odometry odom_diff;
-		first_project::customPoses diff_pose;
-		odom_diff.header.stamp = current_time;
-		odom_diff.header.frame_id = "world";
-
-		//set the position
-		odom_diff.pose.pose.position.x = x_differential;
-		odom_diff.pose.pose.position.y = y_differential;
-		odom_diff.pose.pose.position.z = 0.0;
-		odom_diff.pose.pose.orientation = odom_quat_diff;
-
-		//set the velocity
-		odom_diff.child_frame_id = "base_link_differential";
-		odom_diff.twist.twist.linear.x = v_differential * cos(th_differential);
-		odom_diff.twist.twist.linear.y = v_differential * sin(th_differential);
-		odom_diff.twist.twist.angular.z = w_differential;
-
-		diff_pose.model = "Differential drive";
-		diff_pose.x= x_differential;
-		diff_pose.y= y_differential;
-		diff_pose.th= th_differential;
-
-		//rotation of wheels
-		r_lW += vL * dt;
-		r_rW += vR * dt;
-
-		if(r_rW > 2 * M_PI) r_rW -= 2 * M_PI;
-		if(r_rW < 0) r_rW += 2 * M_PI;
-
-		if(r_lW > 2 * M_PI) r_lW -= 2 * M_PI;
-		if(r_lW < 0) r_lW += 2 * M_PI;
-
-		//Right Wheel
-		//quaternion created from pitch
-		geometry_msgs::Quaternion odom_quat_diff_rW = tf::createQuaternionMsgFromRollPitchYaw(0.0, r_rW, 0.0);
-
-		//transformation published by tf
-		odom_trans_diff_rW.header.stamp = current_time;
-		odom_trans_diff_rW.header.frame_id = "base_link_differential";
-		odom_trans_diff_rW.child_frame_id = "right_wheel_differential";
-
-		odom_trans_diff_rW.transform.translation.x = 0.0;
-		odom_trans_diff_rW.transform.translation.y = -0.65;
-		odom_trans_diff_rW.transform.translation.z = 0.0;
-		odom_trans_diff_rW.transform.rotation = odom_quat_diff_rW;
-
-
-		//Left Wheel
-		//quaternion created from pitch
-		geometry_msgs::Quaternion odom_quat_diff_lW = tf::createQuaternionMsgFromRollPitchYaw(0.0, r_lW, 0.0);
-
-		//transformation published by tf
-		odom_trans_diff_lW.header.stamp = current_time;
-		odom_trans_diff_lW.header.frame_id = "base_link_differential";
-		odom_trans_diff_lW.child_frame_id = "left_wheel_differential";
-
-		odom_trans_diff_lW.transform.translation.x = 0.0;
-		odom_trans_diff_lW.transform.translation.y = 0.65;
-		odom_trans_diff_lW.transform.translation.z = 0.0;
-		odom_trans_diff_lW.transform.rotation = odom_quat_diff_lW;
-
-
-
 
 		//___________________ACKERMANN STEERING_____________________________________
 
