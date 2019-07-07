@@ -1,15 +1,54 @@
 cmake_minimum_required(VERSION 2.8.3)
-project (first_project)
+project(second_project)
 
-find_package(catkin REQUIRED COMPONENTS roscpp std_msgs tf message_generation ) #roslaunch
-add_message_files(DIRECTORY msg
-FILES floatStamped.msg)
-generate_messages(DEPENDENCIES std_msgs)
-#roslaunch_add_file_check(launch)
-catkin_package(CATKIN_DEPENDS message_runtime std_msgs)
+find_package(catkin REQUIRED COMPONENTS
+  cmake_modules
+  message_filters
+  roscpp
+  sensor_msgs
+  std_msgs
+  tf
+)
 
-include_directories(include ${catkin_INCLUDE_DIRS})
-add_executable(tf_odom_pub src/tf_odom_pub.cpp)
-target_link_libraries(tf_odom_pub ${catkin_LIBRARIES})
-add_dependencies(tf_odom_pub ${catkin_EXPORTED_TARGETS})
-add_dependencies(tf_odom_pub ${PROJECT_NAME}_gencfg)
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES complementary_filter
+  CATKIN_DEPENDS message_filters roscpp sensor_msgs std_msgs tf
+)
+
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
+## Declare a cpp library
+  add_library(complementary_filter
+  src/complementary_filter.cpp
+  src/complementary_filter_ros.cpp
+  include/imu_complementary_filter/complementary_filter.h
+  include/imu_complementary_filter/complementary_filter_ros.h
+)
+
+
+# create complementary_filter_node executable
+  add_executable(complementary_filter_node
+  src/complementary_filter_node.cpp)
+  target_link_libraries(complementary_filter_node complementary_filter ${catkin_LIBRARIES})
+
+  install(TARGETS complementary_filter complementary_filter_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+## Mark cpp header files for installation
+  install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
+
+# add our node
+add_executable(odom_pub src/odom_pub.cpp)
+target_link_libraries(odom_pub ${catkin_LIBRARIES})
+add_dependencies(odom_pub ${catkin_EXPORTED_TARGETS})
