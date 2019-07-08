@@ -37,15 +37,15 @@
 namespace imu_tools {
 
 ComplementaryFilterROS::ComplementaryFilterROS(
-    const ros::NodeHandle& nh, 
+    const ros::NodeHandle& nh,
     const ros::NodeHandle& nh_private):
-  nh_(nh), 
+  nh_(nh),
   nh_private_(nh_private),
   initialized_filter_(false)
 {
   ROS_INFO("Starting ComplementaryFilterROS");
   initializeParams();
-  
+
   int queue_size = 5;
 
   // Register publishers:
@@ -91,7 +91,7 @@ ComplementaryFilterROS::~ComplementaryFilterROS()
 void ComplementaryFilterROS::initializeParams()
 {
   double gain_acc;
-  double gain_mag;  
+  double gain_mag;
   bool do_bias_estimation;
   double bias_alpha;
   bool do_adaptive_gain;
@@ -128,7 +128,7 @@ void ComplementaryFilterROS::initializeParams()
   {
     if(!filter_.setGainMag(gain_mag))
       ROS_WARN("Invalid gain_mag passed to ComplementaryFilter.");
-  }  
+  }
   if (do_bias_estimation)
   {
     if(!filter_.setBiasAlpha(bias_alpha))
@@ -147,16 +147,16 @@ void ComplementaryFilterROS::initializeParams()
 
 void ComplementaryFilterROS::imuCallback(const ImuMsg::ConstPtr& imu_msg_raw)
 {
-  const geometry_msgs::Vector3& a = imu_msg_raw->linear_acceleration; 
+  const geometry_msgs::Vector3& a = imu_msg_raw->linear_acceleration;
   const geometry_msgs::Vector3& w = imu_msg_raw->angular_velocity;
   const ros::Time& time = imu_msg_raw->header.stamp;
 
   // Initialize.
   if (!initialized_filter_)
-  {   
+  {
     time_prev_ = time;
     initialized_filter_ = true;
-    return; 
+    return;
   }
 
   // determine dt: either constant, or from IMU timestamp
@@ -168,51 +168,51 @@ void ComplementaryFilterROS::imuCallback(const ImuMsg::ConstPtr& imu_msg_raw)
 
   time_prev_ = time;
 
-  // Update the filter.    
+  // Update the filter.
   filter_.update(a.x, a.y, a.z, w.x, w.y, w.z, dt);
 
-  // Publish state.     
+  // Publish state.
   publish(imu_msg_raw);
 }
 
 void ComplementaryFilterROS::imuMagCallback(const ImuMsg::ConstPtr& imu_msg_raw,
                                             const MagMsg::ConstPtr& mag_msg)
 {
-  const geometry_msgs::Vector3& a = imu_msg_raw->linear_acceleration; 
+  const geometry_msgs::Vector3& a = imu_msg_raw->linear_acceleration;
   const geometry_msgs::Vector3& w = imu_msg_raw->angular_velocity;
   const geometry_msgs::Vector3& m = mag_msg->magnetic_field;
   const ros::Time& time = imu_msg_raw->header.stamp;
-    
+
   // Initialize.
   if (!initialized_filter_)
-  {   
+  {
     time_prev_ = time;
     initialized_filter_ = true;
-    return; 
+    return;
   }
- 
+
   // Calculate dt.
   double dt = (time - time_prev_).toSec();
   time_prev_ = time;
-   //ros::Time t_in, t_out;        
+   //ros::Time t_in, t_out;
   //t_in = ros::Time::now();
-  // Update the filter.    
+  // Update the filter.
   if (isnan(m.x) || isnan(m.y) || isnan(m.z))
     filter_.update(a.x, a.y, a.z, w.x, w.y, w.z, dt);
-  else 
+  else
     filter_.update(a.x, a.y, a.z, w.x, w.y, w.z, m.x, m.y, m.z, dt);
 
-  //t_out = ros::Time::now(); 
+  //t_out = ros::Time::now();
   //float dt_tot = (t_out - t_in).toSec() * 1000.0; // In msec.
   //printf("%.6f\n", dt_tot);
-  // Publish state.     
+  // Publish state.
   publish(imu_msg_raw);
 }
 
 tf::Quaternion ComplementaryFilterROS::hamiltonToTFQuaternion(
     double q0, double q1, double q2, double q3) const
 {
-  // ROS uses the Hamilton quaternion convention (q0 is the scalar). However, 
+  // ROS uses the Hamilton quaternion convention (q0 is the scalar). However,
   // the ROS quaternion is in the form [x, y, z, w], with w as the scalar.
   return tf::Quaternion(q1, q2, q3, q0);
 }
@@ -226,7 +226,7 @@ void ComplementaryFilterROS::publish(
   tf::Quaternion q = hamiltonToTFQuaternion(q0, q1, q2, q3);
 
   // Create and publish fitlered IMU message.
-  boost::shared_ptr<sensor_msgs::Imu> imu_msg = 
+  boost::shared_ptr<sensor_msgs::Imu> imu_msg =
       boost::make_shared<sensor_msgs::Imu>(*imu_msg_raw);
   tf::quaternionTFToMsg(q, imu_msg->orientation);
 
@@ -237,7 +237,7 @@ void ComplementaryFilterROS::publish(
     imu_msg->angular_velocity.y -= filter_.getAngularVelocityBiasY();
     imu_msg->angular_velocity.z -= filter_.getAngularVelocityBiasZ();
   }
-  imu_msg->header.frame_id = "world";
+  imu_msg->header.frame_id = "imu_link";
   imu_publisher_.publish(imu_msg);
 
   if (publish_debug_topics_)

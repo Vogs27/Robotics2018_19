@@ -11,7 +11,7 @@
   <node name="ekf_node" pkg="robot_localization" type="ekf_localization_node" clear_params="true">
 
     <param name="frequency" value="30"/>
-    <param name="sensor_timeout" value="0.1"/>
+    <param name="sensor_timeout" value="0.5"/>
     <param name="two_d_mode" value="true"/>
 
     <param name="map_frame" value="map"/>
@@ -27,32 +27,36 @@
 
     <rosparam param="odom0_config">[false, false, false,
                                     false, false, false,
-                                    true,  true,  true,
-                                    false, false, false,
+                                    true, true, false,
+                                    false, false, true,
                                     false, false, false]</rosparam>
 
     <rosparam param="imu0_config">[false, false, false,
-                                   true,  true,  true,
+                                   false, false, true,
                                    false, false, false,
-                                   true,  true,  false,
-                                   true,  true,  true]</rosparam>
+                                   false, false, true,
+                                   true, false, false]</rosparam>
 
-    <param name="odom0_differential" value="false"/>
-    <param name="imu0_differential" value="false"/>
+    <param name="odom0_queue_size" value="10"/>
+    <param name="imu0_queue_size" value="10"/>
 
-    <param name="odom0_relative" value="true"/>
-    <param name="imu0_relative" value="false"/>
+
+          <param name="odom0_differential" value="false"/>
+          <param name="imu0_differential" value="false"/>
+
+          <param name="odom0_relative" value="true"/>
+          <param name="imu0_relative" value="false"/>
+
 
     <param name="imu0_remove_gravitational_acceleration" value="true"/>
 
     <param name="print_diagnostics" value="true"/>
 
-    <param name="odom0_queue_size" value="10"/>
-    <param name="imu0_queue_size" value="10"/>
+
 
     <param name="debug"           value="false"/>
     <param name="debug_out_file"  value="debug_ekf_localization.txt"/>
-
+<!-- -->
     <rosparam param="process_noise_covariance">[0.05, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
                                                 0,    0.05, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
                                                 0,    0,    0.06, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
@@ -83,13 +87,14 @@
                                                    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     1e-9,  0,    0,    0,
                                                    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1e-9, 0,    0,
                                                    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1e-9, 0,
-                                                   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1e-9]</rosparam>
+                                                   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1e-9]</rosparam>  <!-- -->
+</node>
 
-  </node>
 
-
-    <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" >
-  <rosparam command="load" file="$(find second_project)/params/navsat_transform_param.yaml" />
+<node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" >
+      <rosparam command="load" file="$(find second_project)/params/navsat_transform_param.yaml" />
+      <remap from="imu/data" to="swiftnav/rear/imu/data"/>
+      <remap from="gps/fix" to="swiftnav/rear/gps"/>
 </node>
 
 
@@ -99,11 +104,12 @@
 
   <node pkg="second_project" type="complementary_filter_node"
       name="complementary_filter_gain_node" output="screen">
-    <param name="do_bias_estimation" value="true"/>
-    <param name="do_adaptive_gain" value="true"/>
-    <param name="use_mag" value="false"/>
-    <param name="gain_acc" value="0.01"/>
-    <param name="gain_mag" value="0.01"/>
+      <param name="do_bias_estimation" value="true"/>
+      <param name="do_adaptive_gain" value="true"/>
+      <param name="use_mag" value="false"/>
+      <param name="gain_acc" value="0.01"/>
+      <param name="gain_mag" value="0.01"/>
+    <param name="fixed_frame" value="base_link"/>
     <remap from="imu" to="/swiftnav/rear/imu"/>
   </node>
 
